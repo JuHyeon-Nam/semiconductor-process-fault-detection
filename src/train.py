@@ -269,6 +269,51 @@ def plot_feature_importance(top_features: pd.DataFrame) -> None:
     plt.close()
 
 
+def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
+    model_labels = metrics["name"].tolist()
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    fig.suptitle("Semiconductor Fault Detection Result Dashboard", fontsize=15, fontweight="bold")
+
+    axes[0, 0].bar(model_labels, metrics["recall_fail"], color="#4c78a8")
+    axes[0, 0].set_title("Fail Recall by Model")
+    axes[0, 0].set_ylim(0, 1)
+    axes[0, 0].tick_params(axis="x", rotation=15)
+
+    axes[0, 1].bar(model_labels, metrics["f2_fail"], color="#f58518")
+    axes[0, 1].set_title("F2 Score by Model")
+    axes[0, 1].set_ylim(0, 1)
+    axes[0, 1].tick_params(axis="x", rotation=15)
+
+    matrix = np.array(best.confusion)
+    axes[1, 0].imshow(matrix, cmap="Blues")
+    axes[1, 0].set_title(f"Best Confusion Matrix: {best.name}")
+    axes[1, 0].set_xticks([0, 1], ["Pred Pass", "Pred Fail"])
+    axes[1, 0].set_yticks([0, 1], ["True Pass", "True Fail"])
+    for i in range(2):
+        for j in range(2):
+            axes[1, 0].text(j, i, str(matrix[i, j]), ha="center", va="center")
+
+    axes[1, 1].axis("off")
+    summary = (
+        f"Best model: {best.name}\n"
+        f"Threshold: {best.threshold:.2f}\n"
+        f"Fail Recall: {best.recall_fail:.4f}\n"
+        f"Fail Precision: {best.precision_fail:.4f}\n"
+        f"Fail F2: {best.f2_fail:.4f}\n"
+        f"PR-AUC: {best.pr_auc:.4f}\n\n"
+        "Decision logic:\n"
+        "- optimize threshold on validation set\n"
+        "- prioritize missed-fail reduction\n"
+        "- review top sensor candidates"
+    )
+    axes[1, 1].text(0.02, 0.95, summary, va="top", fontsize=11, family="monospace")
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    plt.savefig(FIGURES / "result_dashboard.png", dpi=180)
+    plt.close()
+
+
 def write_summary(best: Evaluation, top_features: pd.DataFrame) -> None:
     feature_lines = ["| feature | importance |", "|---|---:|"]
     for row in top_features.head(10).itertuples(index=False):
@@ -373,6 +418,7 @@ def main() -> None:
     plot_threshold_curve(curves[best.name], best.name)
     plot_confusion(best.confusion, best.name)
     plot_feature_importance(top_features)
+    plot_result_dashboard(metrics, best)
     write_summary(best, top_features)
     print(f"saved reports: {REPORTS}")
 
