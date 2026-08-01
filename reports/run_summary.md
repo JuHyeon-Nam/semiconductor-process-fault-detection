@@ -1,5 +1,37 @@
 # SECOM Run Summary
 
+## Data Quality Findings
+
+- Samples: 1,567
+- Sensors: 590
+- Fail ratio: 6.64%
+- Zero-variance sensors: 116
+- Sensors with >=50% missing values: 28
+- Highly correlated sensor pairs with abs(correlation) >=0.98: 201
+
+## Split Profile
+
+| split | total | pass | fail | fail_ratio |
+|---|---:|---:|---:|---:|
+| train | 939 | 877 | 62 | 0.0660 |
+| validation | 314 | 293 | 21 | 0.0669 |
+| test | 314 | 293 | 21 | 0.0669 |
+
+## Top Missing Sensors
+
+| sensor | missing_count | missing_ratio |
+|---|---:|---:|
+| sensor_157 | 1429 | 0.9119 |
+| sensor_292 | 1429 | 0.9119 |
+| sensor_293 | 1429 | 0.9119 |
+| sensor_158 | 1429 | 0.9119 |
+| sensor_492 | 1341 | 0.8558 |
+| sensor_358 | 1341 | 0.8558 |
+| sensor_085 | 1341 | 0.8558 |
+| sensor_220 | 1341 | 0.8558 |
+| sensor_246 | 1018 | 0.6496 |
+| sensor_109 | 1018 | 0.6496 |
+
 ## Best Model
 
 - Model: random_forest
@@ -9,6 +41,7 @@
 - Fail F1: 0.2602
 - Fail F2: 0.4301
 - PR-AUC: 0.2150
+- Accuracy: 0.7102
 
 ## Confusion Matrix
 
@@ -16,6 +49,10 @@
 |---|---:|---:|
 | True Pass | 207 | 86 |
 | True Fail | 5 | 16 |
+
+## Accuracy Trap Baseline
+
+An all-pass rule reaches 0.9331 accuracy on the test split, but its fail recall is 0.0000. This is why the project reports Fail Recall, F2, and PR-AUC instead of treating accuracy as the primary metric.
 
 ## Top Sensor Candidates
 

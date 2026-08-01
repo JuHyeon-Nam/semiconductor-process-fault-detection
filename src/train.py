@@ -10,6 +10,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassif
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
+    accuracy_score,
     average_precision_score,
     confusion_matrix,
     fbeta_score,
@@ -38,6 +39,9 @@ class Evaluation:
     f1_fail: float
     f2_fail: float
     pr_auc: float
+    accuracy: float
+    false_alarm_count: int
+    missed_fail_count: int
     confusion: list[list[int]]
 
 
@@ -118,6 +122,7 @@ def threshold_curve(y_true: pd.Series, scores: np.ndarray) -> pd.DataFrame:
     rows = []
     for threshold in np.linspace(0.02, 0.80, 40):
         pred = (scores >= threshold).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_true, pred, labels=[0, 1]).ravel()
         rows.append(
             {
                 "threshold": threshold,
@@ -125,6 +130,10 @@ def threshold_curve(y_true: pd.Series, scores: np.ndarray) -> pd.DataFrame:
                 "precision_fail": precision_score(y_true, pred, zero_division=0),
                 "f1_fail": f1_score(y_true, pred, zero_division=0),
                 "f2_fail": fbeta_score(y_true, pred, beta=2, zero_division=0),
+                "accuracy": accuracy_score(y_true, pred),
+                "false_alarm_count": int(fp),
+                "missed_fail_count": int(fn),
+                "predicted_fail_count": int(fp + tp),
             }
         )
     return pd.DataFrame(rows)
@@ -138,6 +147,7 @@ def choose_threshold(y_valid: pd.Series, valid_scores: np.ndarray) -> tuple[floa
 
 def evaluate(name: str, threshold: float, y_test: pd.Series, scores: np.ndarray) -> Evaluation:
     pred = (scores >= threshold).astype(int)
+    tn, fp, fn, tp = confusion_matrix(y_test, pred, labels=[0, 1]).ravel()
     return Evaluation(
         name=name,
         threshold=threshold,
@@ -146,7 +156,10 @@ def evaluate(name: str, threshold: float, y_test: pd.Series, scores: np.ndarray)
         f1_fail=f1_score(y_test, pred, zero_division=0),
         f2_fail=fbeta_score(y_test, pred, beta=2, zero_division=0),
         pr_auc=average_precision_score(y_test, scores),
-        confusion=confusion_matrix(y_test, pred).tolist(),
+        accuracy=accuracy_score(y_test, pred),
+        false_alarm_count=int(fp),
+        missed_fail_count=int(fn),
+        confusion=[[int(tn), int(fp)], [int(fn), int(tp)]],
     )
 
 
@@ -167,20 +180,75 @@ def feature_importance(model: Pipeline, x_train: pd.DataFrame) -> pd.DataFrame:
 
 
 def write_data_profile(x: pd.DataFrame, y: pd.Series) -> None:
-    class_profile = y.value_counts().rename(index={0: "pass", 1: "fail"}).reset_index()
+    class_profile = y.value_counts().sort_index().rename(index={0: "pass", 1: "fail"}).reset_index()
     class_profile.columns = ["class", "count"]
     class_profile["ratio"] = class_profile["count"] / class_profile["count"].sum()
     class_profile.to_csv(REPORTS / "class_profile.csv", index=False)
 
     missing = (
-        x.isna()
-        .mean()
-        .rename("missing_ratio")
-        .reset_index()
-        .rename(columns={"index": "sensor"})
+        pd.DataFrame(
+            {
+                "sensor": x.columns,
+                "missing_count": x.isna().sum().values,
+                "missing_ratio": x.isna().mean().values,
+                "non_missing_count": x.notna().sum().values,
+            }
+        )
         .sort_values("missing_ratio", ascending=False)
     )
     missing.to_csv(REPORTS / "missing_profile.csv", index=False)
+
+    numeric = x.astype(float)
+    sensor_quality = pd.DataFrame(
+        {
+            "sensor": x.columns,
+            "missing_ratio": numeric.isna().mean().values,
+            "unique_non_missing": numeric.nunique(dropna=True).values,
+            "variance": numeric.var(skipna=True).fillna(0.0).values,
+        }
+    )
+    sensor_quality["is_zero_variance"] = sensor_quality["variance"] == 0
+    sensor_quality["is_all_missing"] = sensor_quality["unique_non_missing"] == 0
+    sensor_quality.sort_values(["is_zero_variance", "missing_ratio"], ascending=False).to_csv(
+        REPORTS / "sensor_quality_profile.csv",
+        index=False,
+    )
+
+    usable = numeric.loc[:, ~sensor_quality.set_index("sensor")["is_zero_variance"]]
+    corr = usable.corr(numeric_only=True).abs().clip(upper=1.0)
+    upper_mask = np.triu(np.ones(corr.shape, dtype=bool), k=1)
+    corr_pairs = (
+        corr.where(upper_mask)
+        .stack()
+        .rename("abs_correlation")
+        .reset_index()
+        .rename(columns={"level_0": "sensor_a", "level_1": "sensor_b"})
+        .sort_values("abs_correlation", ascending=False)
+    )
+    corr_pairs[corr_pairs["abs_correlation"] >= 0.98].to_csv(
+        REPORTS / "high_correlation_pairs.csv",
+        index=False,
+    )
+
+
+def write_split_profile(
+    y_train: pd.Series,
+    y_valid: pd.Series,
+    y_test: pd.Series,
+) -> None:
+    rows = []
+    for split_name, split_y in [("train", y_train), ("validation", y_valid), ("test", y_test)]:
+        counts = split_y.value_counts().reindex([0, 1], fill_value=0)
+        rows.append(
+            {
+                "split": split_name,
+                "total": int(counts.sum()),
+                "pass_count": int(counts.loc[0]),
+                "fail_count": int(counts.loc[1]),
+                "fail_ratio": counts.loc[1] / counts.sum(),
+            }
+        )
+    pd.DataFrame(rows).to_csv(REPORTS / "split_class_profile.csv", index=False)
 
 
 def plot_class_balance(y: pd.Series) -> None:
@@ -206,6 +274,39 @@ def plot_missingness(x: pd.DataFrame) -> None:
     plt.ylabel("Sensor count")
     plt.tight_layout()
     plt.savefig(FIGURES / "missingness_distribution.png", dpi=180)
+    plt.close()
+
+
+def plot_top_missing_sensors(x: pd.DataFrame) -> None:
+    missing = x.isna().mean().sort_values(ascending=False).head(20).iloc[::-1]
+    plt.figure(figsize=(8, 6))
+    plt.barh(missing.index, missing.values, color="#b279a2")
+    plt.title("Top Missing Sensors")
+    plt.xlabel("Missing ratio")
+    plt.xlim(0, max(1.0, missing.max() * 1.05))
+    plt.tight_layout()
+    plt.savefig(FIGURES / "top_missing_sensors.png", dpi=180)
+    plt.close()
+
+
+def plot_sensor_quality_summary(x: pd.DataFrame) -> None:
+    variance = x.var(skipna=True).fillna(0)
+    missing = x.isna().mean()
+    counts = {
+        "All sensors": len(x.columns),
+        "Zero variance": int((variance == 0).sum()),
+        ">=50% missing": int((missing >= 0.50).sum()),
+        ">=20% missing": int((missing >= 0.20).sum()),
+    }
+    plt.figure(figsize=(7, 4))
+    bars = plt.bar(counts.keys(), counts.values(), color=["#4c78a8", "#e45756", "#f58518", "#72b7b2"])
+    plt.title("Sensor Quality Flags")
+    plt.ylabel("Sensor count")
+    plt.xticks(rotation=15, ha="right")
+    for bar in bars:
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), str(int(bar.get_height())), ha="center", va="bottom")
+    plt.tight_layout()
+    plt.savefig(FIGURES / "sensor_quality_summary.png", dpi=180)
     plt.close()
 
 
@@ -269,6 +370,25 @@ def plot_feature_importance(top_features: pd.DataFrame) -> None:
     plt.close()
 
 
+def plot_accuracy_warning(metrics: pd.DataFrame) -> None:
+    ordered = metrics.sort_values("accuracy", ascending=False)
+    labels = ordered["name"].tolist()
+    x_pos = np.arange(len(labels))
+
+    fig, ax1 = plt.subplots(figsize=(9, 5))
+    ax1.bar(x_pos - 0.18, ordered["accuracy"], width=0.36, label="Accuracy", color="#4c78a8")
+    ax1.bar(x_pos + 0.18, ordered["recall_fail"], width=0.36, label="Fail recall", color="#e45756")
+    ax1.set_ylim(0, 1)
+    ax1.set_xticks(x_pos, labels, rotation=15, ha="right")
+    ax1.set_title("Accuracy Can Hide Missed Failures")
+    ax1.set_ylabel("Score")
+    ax1.legend()
+    ax1.grid(axis="y", alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(FIGURES / "accuracy_warning.png", dpi=180)
+    plt.close()
+
+
 def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
     model_labels = metrics["name"].tolist()
 
@@ -295,6 +415,7 @@ def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
             axes[1, 0].text(j, i, str(matrix[i, j]), ha="center", va="center")
 
     axes[1, 1].axis("off")
+    all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
     summary = (
         f"Best model: {best.name}\n"
         f"Threshold: {best.threshold:.2f}\n"
@@ -302,6 +423,8 @@ def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
         f"Fail Precision: {best.precision_fail:.4f}\n"
         f"Fail F2: {best.f2_fail:.4f}\n"
         f"PR-AUC: {best.pr_auc:.4f}\n\n"
+        f"All-pass accuracy: {all_pass.accuracy:.4f}\n"
+        f"All-pass fail recall: {all_pass.recall_fail:.4f}\n\n"
         "Decision logic:\n"
         "- optimize threshold on validation set\n"
         "- prioritize missed-fail reduction\n"
@@ -314,7 +437,24 @@ def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
     plt.close()
 
 
-def write_summary(best: Evaluation, top_features: pd.DataFrame) -> None:
+def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.DataFrame) -> None:
+    sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
+    missing_profile = pd.read_csv(REPORTS / "missing_profile.csv")
+    high_corr = pd.read_csv(REPORTS / "high_correlation_pairs.csv")
+    split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
+
+    split_lines = ["| split | total | pass | fail | fail_ratio |", "|---|---:|---:|---:|---:|"]
+    for row in split_profile.itertuples(index=False):
+        split_lines.append(
+            f"| {row.split} | {row.total} | {row.pass_count} | {row.fail_count} | {row.fail_ratio:.4f} |"
+        )
+    split_table = "\n".join(split_lines)
+
+    missing_lines = ["| sensor | missing_count | missing_ratio |", "|---|---:|---:|"]
+    for row in missing_profile.head(10).itertuples(index=False):
+        missing_lines.append(f"| {row.sensor} | {row.missing_count} | {row.missing_ratio:.4f} |")
+    missing_table = "\n".join(missing_lines)
+
     feature_lines = ["| feature | importance |", "|---|---:|"]
     for row in top_features.head(10).itertuples(index=False):
         feature_lines.append(f"| {row.feature} | {row.importance:.6f} |")
@@ -322,7 +462,25 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame) -> None:
 
     tn, fp = best.confusion[0]
     fn, tp = best.confusion[1]
+    all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
     summary = f"""# SECOM Run Summary
+
+## Data Quality Findings
+
+- Samples: 1,567
+- Sensors: 590
+- Fail ratio: 6.64%
+- Zero-variance sensors: {int(sensor_quality["is_zero_variance"].sum())}
+- Sensors with >=50% missing values: {int((sensor_quality["missing_ratio"] >= 0.50).sum())}
+- Highly correlated sensor pairs with abs(correlation) >=0.98: {len(high_corr)}
+
+## Split Profile
+
+{split_table}
+
+## Top Missing Sensors
+
+{missing_table}
 
 ## Best Model
 
@@ -333,6 +491,7 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame) -> None:
 - Fail F1: {best.f1_fail:.4f}
 - Fail F2: {best.f2_fail:.4f}
 - PR-AUC: {best.pr_auc:.4f}
+- Accuracy: {best.accuracy:.4f}
 
 ## Confusion Matrix
 
@@ -340,6 +499,10 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame) -> None:
 |---|---:|---:|
 | True Pass | {tn} | {fp} |
 | True Fail | {fn} | {tp} |
+
+## Accuracy Trap Baseline
+
+An all-pass rule reaches {all_pass.accuracy:.4f} accuracy on the test split, but its fail recall is {all_pass.recall_fail:.4f}. This is why the project reports Fail Recall, F2, and PR-AUC instead of treating accuracy as the primary metric.
 
 ## Top Sensor Candidates
 
@@ -359,6 +522,8 @@ def main() -> None:
     write_data_profile(x, y)
     plot_class_balance(y)
     plot_missingness(x)
+    plot_top_missing_sensors(x)
+    plot_sensor_quality_summary(x)
 
     x_dev, x_test, y_dev, y_test = train_test_split(
         x,
@@ -374,11 +539,17 @@ def main() -> None:
         stratify=y_dev,
         random_state=42,
     )
+    write_split_profile(y_train, y_valid, y_test)
 
     rows = []
     models: dict[str, Pipeline] = {}
     test_scores_by_model: dict[str, np.ndarray] = {}
     curves: dict[str, pd.DataFrame] = {}
+
+    all_pass_scores = np.zeros(len(y_test))
+    all_pass = evaluate("all_pass_baseline", 1.0, y_test, all_pass_scores)
+    rows.append(all_pass.__dict__)
+    test_scores_by_model[all_pass.name] = all_pass_scores
 
     for name, model in build_models().items():
         print(f"train: {name}")
@@ -406,6 +577,9 @@ def main() -> None:
         f1_fail=float(best_row["f1_fail"]),
         f2_fail=float(best_row["f2_fail"]),
         pr_auc=float(best_row["pr_auc"]),
+        accuracy=float(best_row["accuracy"]),
+        false_alarm_count=int(best_row["false_alarm_count"]),
+        missed_fail_count=int(best_row["missed_fail_count"]),
         confusion=best_row["confusion"],
     )
 
@@ -418,8 +592,9 @@ def main() -> None:
     plot_threshold_curve(curves[best.name], best.name)
     plot_confusion(best.confusion, best.name)
     plot_feature_importance(top_features)
+    plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
-    write_summary(best, top_features)
+    write_summary(best, top_features, metrics)
     print(f"saved reports: {REPORTS}")
 
 

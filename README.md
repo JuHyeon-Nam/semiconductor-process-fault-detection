@@ -22,7 +22,8 @@
 | Best Model | RandomForest with validation-based threshold optimization |
 | Key Metric | Fail Recall / F2 / PR-AUC, not plain Accuracy |
 | Best Test Result | Fail Recall **0.7619**, Fail F2 **0.4301** |
-| Main Output | Model comparison, threshold trade-off, confusion matrix, top sensor candidates |
+| Baseline Check | All-pass baseline reaches **0.9331 accuracy** but **0.0000 fail recall** |
+| Main Output | Data quality profile, baseline comparison, threshold trade-off, sensor candidates |
 
 ![Result dashboard](reports/figures/result_dashboard.png)
 
@@ -34,11 +35,12 @@
 
 이 프로젝트는 그 문제를 피하기 위해 아래 흐름으로 진행했습니다.
 
-1. 공정 센서 데이터의 결측/불균형 구조를 먼저 확인한다.
-2. 모델을 여러 개 비교하되, Accuracy보다 불량 미탐을 줄이는 Recall/F2를 본다.
-3. 임계값은 test set이 아니라 validation set에서 먼저 결정한다.
-4. 최종 test set에서 성능을 확인한다.
-5. feature importance로 주요 센서 후보를 정리한다.
+1. 공정 센서 데이터의 결측/불균형/저분산/중복 센서 구조를 먼저 확인한다.
+2. `all_pass_baseline`을 추가해 Accuracy가 왜 위험한지 수치로 확인한다.
+3. 모델을 여러 개 비교하되, Accuracy보다 불량 미탐을 줄이는 Recall/F2를 본다.
+4. 임계값은 test set이 아니라 validation set에서 먼저 결정한다.
+5. 최종 test set에서 성능을 확인한다.
+6. feature importance로 주요 센서 후보를 정리한다.
 
 이 접근은 특정 회사 한 곳이 아니라, **삼성전자 DS, SK하이닉스, 반도체 장비사, 스마트팩토리/제조AI 직무**에서 공통으로 요구되는 데이터 기반 문제해결 흐름을 보여주기 위한 것입니다.
 
@@ -82,6 +84,9 @@
 | Pass Samples | 1,463 |
 | Fail Samples | 104 |
 | Fail Ratio | 6.64% |
+| Zero-Variance Sensors | 116 |
+| Sensors with >=50% Missing Values | 28 |
+| Highly Correlated Sensor Pairs >=0.98 | 201 |
 
 Raw data is not committed. It is downloaded reproducibly through `src/fetch_data.py`.
 
@@ -89,15 +94,26 @@ Raw data is not committed. It is downloaded reproducibly through `src/fetch_data
 
 ![Missingness distribution](reports/figures/missingness_distribution.png)
 
+![Top missing sensors](reports/figures/top_missing_sensors.png)
+
+![Sensor quality summary](reports/figures/sensor_quality_summary.png)
+
+The EDA intentionally separates modeling from data-quality diagnosis:
+
+- `reports/missing_profile.csv` ranks sensors by missing count and missing ratio.
+- `reports/sensor_quality_profile.csv` flags zero-variance and all-missing sensors.
+- `reports/high_correlation_pairs.csv` lists highly redundant sensor pairs.
+- `reports/split_class_profile.csv` confirms the train/validation/test splits keep the fail ratio stable.
+
 ---
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
-    A["UCI SECOM raw data"] --> B["EDA<br/>class imbalance + missingness"]
+    A["UCI SECOM raw data"] --> B["EDA<br/>imbalance + missingness + redundancy"]
     B --> C["Train / Validation / Test split"]
-    C --> D["Model training<br/>LR / RF / HGB"]
+    C --> D["Baselines + model training<br/>All-pass / LR / RF / HGB"]
     D --> E["Validation threshold search<br/>F2 priority"]
     E --> F["Final test evaluation"]
     F --> G["Sensor candidate ranking"]
@@ -114,15 +130,25 @@ Why F2?
 - F2 gives more weight to Recall than Precision.
 - This fits early-warning systems such as FDC, equipment monitoring, and yield risk screening.
 
+Why not Accuracy?
+
+- The test set has 293 pass samples and 21 fail samples.
+- A rule that predicts every wafer as pass reaches **0.9331 accuracy**.
+- That same rule catches **0 out of 21 fail cases**, so fail recall is **0.0000**.
+- For a manufacturing decision-support PoC, this is unacceptable because missed failures are the exact risk the system is supposed to surface.
+
+![Accuracy warning](reports/figures/accuracy_warning.png)
+
 ---
 
 ## Results
 
-| Model | Threshold | Fail Recall | Fail Precision | Fail F1 | Fail F2 | PR-AUC |
-|---|---:|---:|---:|---:|---:|---:|
-| RandomForest | 0.08 | **0.7619** | 0.1569 | 0.2602 | **0.4301** | **0.2150** |
-| Logistic Regression | 0.62 | 0.1905 | 0.1290 | 0.1538 | 0.1739 | 0.1219 |
-| HistGradientBoosting | 0.02 | 0.0952 | 0.2222 | 0.1333 | 0.1075 | 0.2137 |
+| Model | Threshold | Accuracy | Fail Recall | Fail Precision | Fail F2 | PR-AUC | Missed Fail | False Alarm |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| RandomForest | 0.08 | 0.7102 | **0.7619** | 0.1569 | **0.4301** | **0.2150** | **5** | 86 |
+| Logistic Regression | 0.62 | 0.8599 | 0.1905 | 0.1290 | 0.1739 | 0.1219 | 17 | 27 |
+| HistGradientBoosting | 0.02 | 0.9172 | 0.0952 | 0.2222 | 0.1075 | 0.2137 | 19 | 7 |
+| All-pass baseline | 1.00 | **0.9331** | 0.0000 | 0.0000 | 0.0000 | 0.0669 | 21 | **0** |
 
 ### Confusion Matrix
 
@@ -185,9 +211,13 @@ Generated outputs:
 - `reports/run_summary.md`
 - `reports/class_profile.csv`
 - `reports/missing_profile.csv`
+- `reports/sensor_quality_profile.csv`
+- `reports/high_correlation_pairs.csv`
+- `reports/split_class_profile.csv`
 - `reports/threshold_curve_best.csv`
 - `reports/top_features.csv`
 - `reports/figures/*.png`
+- `docs/upgrade_checklist.md`
 
 ---
 
@@ -198,18 +228,28 @@ Generated outputs:
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
+├── docs
+│   └── upgrade_checklist.md
 ├── src
 │   ├── fetch_data.py
 │   └── train.py
 └── reports
+    ├── class_profile.csv
+    ├── high_correlation_pairs.csv
     ├── metrics.csv
+    ├── missing_profile.csv
     ├── run_summary.md
+    ├── sensor_quality_profile.csv
+    ├── split_class_profile.csv
     ├── top_features.csv
     ├── threshold_curve_best.csv
     └── figures
+        ├── accuracy_warning.png
         ├── result_dashboard.png
         ├── class_imbalance.png
         ├── missingness_distribution.png
+        ├── sensor_quality_summary.png
+        ├── top_missing_sensors.png
         ├── precision_recall_curve.png
         ├── threshold_tradeoff.png
         ├── confusion_matrix_best.png
@@ -244,4 +284,3 @@ Generated outputs:
 - Add anomaly detection baseline such as Isolation Forest or AutoEncoder
 - Add process-tag mapping if a non-anonymized fab dataset is available
 - Build a small FastAPI inference endpoint for FDC PoC
-
