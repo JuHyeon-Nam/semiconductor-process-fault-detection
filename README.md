@@ -19,11 +19,11 @@
 | Dataset | UCI SECOM semiconductor manufacturing sensor data |
 | Task | Pass/Fail prediction from 590 anonymized process sensor variables |
 | Problem Type | Imbalanced binary classification + fault detection thresholding |
-| Best Model | RandomForest with validation-based threshold optimization |
+| Best Model | ExtraTrees with validation-based threshold optimization |
 | Key Metric | Fail Recall / F2 / PR-AUC, not plain Accuracy |
-| Best Test Result | Fail Recall **0.7619**, Fail F2 **0.4301** |
+| Best Test Result | Fail Recall **0.7619**, Fail F2 **0.4819** |
 | Baseline Check | All-pass baseline reaches **0.9331 accuracy** but **0.0000 fail recall** |
-| Main Output | Data quality profile, baseline comparison, threshold trade-off, sensor candidates |
+| Main Output | Data quality profile, model comparison, per-model threshold artifacts, sensor candidates |
 
 ![Result dashboard](reports/figures/result_dashboard.png)
 
@@ -52,7 +52,7 @@
 |---|---|
 | Language | Python |
 | Data | pandas, NumPy |
-| ML | scikit-learn, Logistic Regression, RandomForest, HistGradientBoosting |
+| ML | scikit-learn, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting |
 | Evaluation | Precision, Recall, F1, F2, PR-AUC, confusion matrix |
 | Visualization | matplotlib |
 | Reproducibility | raw-data downloader, deterministic split, generated reports |
@@ -113,7 +113,7 @@ The EDA intentionally separates modeling from data-quality diagnosis:
 flowchart LR
     A["UCI SECOM raw data"] --> B["EDA<br/>imbalance + missingness + redundancy"]
     B --> C["Train / Validation / Test split"]
-    C --> D["Baselines + model training<br/>All-pass / LR / RF / HGB"]
+    C --> D["Baselines + model training<br/>All-pass / LR / RF / ExtraTrees / HGB"]
     D --> E["Validation threshold search<br/>F2 priority"]
     E --> F["Final test evaluation"]
     F --> G["Sensor candidate ranking"]
@@ -145,8 +145,11 @@ Why not Accuracy?
 
 | Model | Threshold | Accuracy | Fail Recall | Fail Precision | Fail F2 | PR-AUC | Missed Fail | False Alarm |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| RandomForest | 0.08 | 0.7102 | **0.7619** | 0.1569 | **0.4301** | **0.2150** | **5** | 86 |
-| Logistic Regression | 0.62 | 0.8599 | 0.1905 | 0.1290 | 0.1739 | 0.1219 | 17 | 27 |
+| ExtraTrees balanced | 0.10 | 0.7739 | **0.7619** | 0.1951 | **0.4819** | **0.2174** | **5** | 66 |
+| RandomForest unweighted | 0.10 | 0.8025 | 0.6667 | 0.2029 | 0.4575 | 0.1701 | 7 | 55 |
+| RandomForest balanced | 0.08 | 0.7102 | **0.7619** | 0.1569 | 0.4301 | 0.2150 | **5** | 86 |
+| Logistic Regression unweighted | 0.06 | 0.8089 | 0.2381 | 0.1020 | 0.1880 | 0.1220 | 16 | 44 |
+| Logistic Regression balanced | 0.62 | 0.8599 | 0.1905 | 0.1290 | 0.1739 | 0.1219 | 17 | 27 |
 | HistGradientBoosting | 0.02 | 0.9172 | 0.0952 | 0.2222 | 0.1075 | 0.2137 | 19 | 7 |
 | All-pass baseline | 1.00 | **0.9331** | 0.0000 | 0.0000 | 0.0000 | 0.0669 | 21 | **0** |
 
@@ -154,12 +157,13 @@ Why not Accuracy?
 
 | | Pred Pass | Pred Fail |
 |---|---:|---:|
-| True Pass | 207 | 86 |
+| True Pass | 227 | 66 |
 | True Fail | 5 | 16 |
 
 Interpretation:
 
 - The selected threshold intentionally increases false alarms to reduce missed failures.
+- ExtraTrees kept the same test fail recall as the balanced RandomForest while reducing false alarms from 86 to 66.
 - This is reasonable for an early-warning manufacturing use case where missed failures are more costly than extra inspection.
 - This model is not claimed as production-ready. The value is in the full problem-solving flow: imbalance recognition, threshold design, metric selection, and sensor candidate ranking.
 
@@ -177,16 +181,16 @@ Top sensor candidates from the best model:
 
 | Rank | Sensor | Importance |
 |---:|---|---:|
-| 1 | sensor_103 | 0.015516 |
-| 2 | sensor_059 | 0.015463 |
-| 3 | sensor_477 | 0.009988 |
-| 4 | sensor_180 | 0.009166 |
-| 5 | sensor_129 | 0.008894 |
-| 6 | sensor_205 | 0.007902 |
-| 7 | sensor_341 | 0.007729 |
-| 8 | sensor_039 | 0.007254 |
-| 9 | sensor_130 | 0.007154 |
-| 10 | sensor_125 | 0.007047 |
+| 1 | sensor_129 | 0.009227 |
+| 2 | sensor_511 | 0.008027 |
+| 3 | sensor_064 | 0.007861 |
+| 4 | sensor_059 | 0.006802 |
+| 5 | sensor_065 | 0.006011 |
+| 6 | sensor_103 | 0.005898 |
+| 7 | sensor_028 | 0.005651 |
+| 8 | sensor_122 | 0.004884 |
+| 9 | sensor_130 | 0.004874 |
+| 10 | sensor_452 | 0.004635 |
 
 ![Feature importance](reports/figures/feature_importance.png)
 
@@ -208,6 +212,7 @@ python src/train.py
 Generated outputs:
 
 - `reports/metrics.csv`
+- `reports/model_comparison.md`
 - `reports/run_summary.md`
 - `reports/class_profile.csv`
 - `reports/missing_profile.csv`
@@ -216,6 +221,10 @@ Generated outputs:
 - `reports/split_class_profile.csv`
 - `reports/threshold_curve_best.csv`
 - `reports/top_features.csv`
+- `reports/models/<model_name>/summary.csv`
+- `reports/models/<model_name>/validation_threshold_curve.csv`
+- `reports/models/<model_name>/test_predictions.csv`
+- `reports/models/<model_name>/*.png`
 - `reports/figures/*.png`
 - `docs/upgrade_checklist.md`
 
@@ -237,7 +246,16 @@ Generated outputs:
     ├── class_profile.csv
     ├── high_correlation_pairs.csv
     ├── metrics.csv
+    ├── model_comparison.md
     ├── missing_profile.csv
+    ├── models
+    │   └── <model_name>
+    │       ├── confusion_matrix.png
+    │       ├── precision_recall_curve.png
+    │       ├── summary.csv
+    │       ├── test_predictions.csv
+    │       ├── threshold_tradeoff.png
+    │       └── validation_threshold_curve.csv
     ├── run_summary.md
     ├── sensor_quality_profile.csv
     ├── split_class_profile.csv
@@ -263,7 +281,7 @@ Generated outputs:
 | Capability | Evidence |
 |---|---|
 | Manufacturing data understanding | imbalance, missingness, sensor-candidate framing |
-| ML modeling | multiple baseline models and fair comparison |
+| ML modeling | multiple baseline models, class-weight comparison, per-model artifacts |
 | Metric judgment | Recall/F2/PR-AUC over plain Accuracy |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
 | Engineer-facing interpretation | top sensor candidates and confusion-matrix trade-off |

@@ -34,40 +34,54 @@
 
 ## Best Model
 
-- Model: random_forest
-- Threshold: 0.08
+- Model: extra_trees_balanced
+- Threshold: 0.10
 - Fail Recall: 0.7619
-- Fail Precision: 0.1569
-- Fail F1: 0.2602
-- Fail F2: 0.4301
-- PR-AUC: 0.2150
-- Accuracy: 0.7102
+- Fail Precision: 0.1951
+- Fail F1: 0.3107
+- Fail F2: 0.4819
+- PR-AUC: 0.2174
+- Accuracy: 0.7739
 
 ## Confusion Matrix
 
 | | Pred Pass | Pred Fail |
 |---|---:|---:|
-| True Pass | 207 | 86 |
+| True Pass | 227 | 66 |
 | True Fail | 5 | 16 |
 
 ## Accuracy Trap Baseline
 
 An all-pass rule reaches 0.9331 accuracy on the test split, but its fail recall is 0.0000. This is why the project reports Fail Recall, F2, and PR-AUC instead of treating accuracy as the primary metric.
 
+## Model Comparison
+
+| model | threshold | accuracy | fail_recall | fail_f2 | pr_auc | missed_fail | false_alarm |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| extra_trees_balanced | 0.10 | 0.7739 | 0.7619 | 0.4819 | 0.2174 | 5 | 66 |
+| random_forest_unweighted | 0.10 | 0.8025 | 0.6667 | 0.4575 | 0.1701 | 7 | 55 |
+| random_forest_balanced | 0.08 | 0.7102 | 0.7619 | 0.4301 | 0.2150 | 5 | 86 |
+| logistic_regression_unweighted | 0.06 | 0.8089 | 0.2381 | 0.1880 | 0.1220 | 16 | 44 |
+| logistic_regression_balanced | 0.62 | 0.8599 | 0.1905 | 0.1739 | 0.1219 | 17 | 27 |
+| hist_gradient_boosting | 0.02 | 0.9172 | 0.0952 | 0.1075 | 0.2137 | 19 | 7 |
+| all_pass_baseline | 1.00 | 0.9331 | 0.0000 | 0.0000 | 0.0669 | 21 | 0 |
+
+Per-model PR curves, threshold curves, confusion matrices, and test predictions are saved under `reports/models/<model_name>/`.
+
 ## Top Sensor Candidates
 
 | feature | importance |
 |---|---:|
-| sensor_103 | 0.015516 |
-| sensor_059 | 0.015463 |
-| sensor_477 | 0.009988 |
-| sensor_180 | 0.009166 |
-| sensor_129 | 0.008894 |
-| sensor_205 | 0.007902 |
-| sensor_341 | 0.007729 |
-| sensor_039 | 0.007254 |
-| sensor_130 | 0.007154 |
-| sensor_125 | 0.007047 |
+| sensor_129 | 0.009227 |
+| sensor_511 | 0.008027 |
+| sensor_064 | 0.007861 |
+| sensor_059 | 0.006802 |
+| sensor_065 | 0.006011 |
+| sensor_103 | 0.005898 |
+| sensor_028 | 0.005651 |
+| sensor_122 | 0.004884 |
+| sensor_130 | 0.004874 |
+| sensor_452 | 0.004635 |
 
 ## Interview Message
 

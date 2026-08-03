@@ -12,8 +12,8 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Class imbalance explanation | Improved | Class profile, class imbalance figure, and all-pass baseline now show why accuracy is misleading. |
 | Data quality EDA | Improved | Missingness, zero-variance sensors, and high-correlation sensor pairs are now reported. |
 | Baseline comparison | Improved | `all_pass_baseline` is included in `reports/metrics.csv` and README results. |
-| Model breadth | Partial | Logistic Regression, RandomForest, and HistGradientBoosting are present; optional XGBoost/LightGBM remain future work. |
-| Threshold analysis | Partial | Best-model validation threshold curve is saved; per-model threshold artifacts remain future work. |
+| Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, and all-pass baseline are compared. |
+| Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
 | Interpretability | Partial | Built-in feature importance exists; permutation importance and optional SHAP remain future work. |
 | Manufacturing deployment story | Partial | FDC framing exists in README; cost-sensitive thresholding and workflow diagrams remain future work. |
 | System demo | Not started | FastAPI inference endpoint remains future work. |
@@ -29,11 +29,19 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added figures for top missing sensors, sensor quality flags, and accuracy-vs-recall warning.
 - Updated README to explain why Fail Recall, F2, and PR-AUC are more appropriate than plain Accuracy.
 
+## Phase 2 Completed
+
+- Added weighted/unweighted Logistic Regression comparison.
+- Added weighted/unweighted RandomForest comparison.
+- Added `extra_trees_balanced` as an additional tree ensemble baseline.
+- Saved per-model artifacts under `reports/models/<model_name>/`.
+- Added `reports/model_comparison.md` for reviewer-friendly model comparison.
+- Updated README result table to reflect the new best model, `extra_trees_balanced`.
+
 ## Next Implementation Queue
 
-1. Phase 2: add optional model baselines such as `balanced_random_forest` style settings, calibrated Logistic Regression, and optional XGBoost/LightGBM when dependencies are available.
-2. Phase 2: save PR curve, threshold trade-off, and confusion matrix per model instead of only for the best model.
-3. Phase 3: add permutation importance and compare it with built-in feature importance.
-4. Phase 4: add cost-sensitive threshold analysis with assumed false alarm and missed failure costs.
-5. Phase 5: add a small FastAPI demo with `/health`, `/model-info`, and `/predict`.
-6. Phase 6: add `docs/interview_notes.md`, `docs/semiconductor_process_notes.md`, and `docs/portfolio_onepager.md`.
+1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
+2. Phase 3: add permutation importance and compare it with built-in feature importance.
+3. Phase 4: add cost-sensitive threshold analysis with assumed false alarm and missed failure costs.
+4. Phase 5: add a small FastAPI demo with `/health`, `/model-info`, and `/predict`.
+5. Phase 6: add `docs/interview_notes.md`, `docs/semiconductor_process_notes.md`, and `docs/portfolio_onepager.md`.

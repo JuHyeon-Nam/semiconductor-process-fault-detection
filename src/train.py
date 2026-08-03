@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
+MODEL_REPORTS = REPORTS / "models"
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,7 @@ def load_data() -> tuple[pd.DataFrame, pd.Series]:
 
 def build_models() -> dict[str, Pipeline]:
     return {
-        "logistic_regression": Pipeline(
+        "logistic_regression_balanced": Pipeline(
             [
                 ("imputer", SimpleImputer(strategy="median")),
                 ("scaler", StandardScaler()),
@@ -76,7 +77,20 @@ def build_models() -> dict[str, Pipeline]:
                 ),
             ]
         ),
-        "random_forest": Pipeline(
+        "logistic_regression_unweighted": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                ("scaler", StandardScaler()),
+                (
+                    "model",
+                    LogisticRegression(
+                        max_iter=3000,
+                        n_jobs=-1,
+                    ),
+                ),
+            ]
+        ),
+        "random_forest_balanced": Pipeline(
             [
                 ("imputer", SimpleImputer(strategy="median")),
                 (
@@ -85,6 +99,35 @@ def build_models() -> dict[str, Pipeline]:
                         n_estimators=500,
                         min_samples_leaf=2,
                         class_weight="balanced_subsample",
+                        random_state=42,
+                        n_jobs=-1,
+                    ),
+                ),
+            ]
+        ),
+        "random_forest_unweighted": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                (
+                    "model",
+                    RandomForestClassifier(
+                        n_estimators=500,
+                        min_samples_leaf=2,
+                        random_state=42,
+                        n_jobs=-1,
+                    ),
+                ),
+            ]
+        ),
+        "extra_trees_balanced": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                (
+                    "model",
+                    ExtraTreesClassifier(
+                        n_estimators=500,
+                        min_samples_leaf=2,
+                        class_weight="balanced",
                         random_state=42,
                         n_jobs=-1,
                     ),
@@ -105,6 +148,18 @@ def build_models() -> dict[str, Pipeline]:
                 ),
             ]
         ),
+    }
+
+
+def model_notes() -> dict[str, str]:
+    return {
+        "all_pass_baseline": "Naive baseline that predicts every sample as pass.",
+        "logistic_regression_balanced": "Linear baseline with class_weight=balanced.",
+        "logistic_regression_unweighted": "Linear baseline without class weighting.",
+        "random_forest_balanced": "Tree ensemble with class_weight=balanced_subsample.",
+        "random_forest_unweighted": "Tree ensemble without class weighting.",
+        "extra_trees_balanced": "Randomized tree ensemble with class_weight=balanced.",
+        "hist_gradient_boosting": "Histogram gradient boosting baseline.",
     }
 
 
@@ -326,7 +381,23 @@ def plot_precision_recall(scores_by_model: dict[str, np.ndarray], y_test: pd.Ser
     plt.close()
 
 
-def plot_threshold_curve(curve: pd.DataFrame, model_name: str) -> None:
+def plot_model_precision_recall(name: str, scores: np.ndarray, y_test: pd.Series, output_path: Path) -> None:
+    precision, recall, _ = precision_recall_curve(y_test, scores)
+    pr_auc = average_precision_score(y_test, scores)
+    plt.figure(figsize=(6, 5))
+    plt.plot(recall, precision, color="#4c78a8", label=f"AP={pr_auc:.3f}")
+    plt.title(f"Precision-Recall: {name}")
+    plt.xlabel("Fail recall")
+    plt.ylabel("Fail precision")
+    plt.ylim(0, 1.05)
+    plt.legend()
+    plt.grid(alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=180)
+    plt.close()
+
+
+def plot_threshold_curve(curve: pd.DataFrame, model_name: str, output_path: Path | None = None) -> None:
     plt.figure(figsize=(7, 5))
     plt.plot(curve["threshold"], curve["recall_fail"], label="Recall")
     plt.plot(curve["threshold"], curve["precision_fail"], label="Precision")
@@ -337,11 +408,11 @@ def plot_threshold_curve(curve: pd.DataFrame, model_name: str) -> None:
     plt.legend()
     plt.grid(alpha=0.25)
     plt.tight_layout()
-    plt.savefig(FIGURES / "threshold_tradeoff.png", dpi=180)
+    plt.savefig(output_path or FIGURES / "threshold_tradeoff.png", dpi=180)
     plt.close()
 
 
-def plot_confusion(confusion: list[list[int]], model_name: str) -> None:
+def plot_confusion(confusion: list[list[int]], model_name: str, output_path: Path | None = None) -> None:
     matrix = np.array(confusion)
     plt.figure(figsize=(5, 4))
     plt.imshow(matrix, cmap="Blues")
@@ -353,7 +424,7 @@ def plot_confusion(confusion: list[list[int]], model_name: str) -> None:
             plt.text(j, i, str(matrix[i, j]), ha="center", va="center", color="black")
     plt.colorbar(fraction=0.046, pad=0.04)
     plt.tight_layout()
-    plt.savefig(FIGURES / "confusion_matrix_best.png", dpi=180)
+    plt.savefig(output_path or FIGURES / "confusion_matrix_best.png", dpi=180)
     plt.close()
 
 
@@ -437,6 +508,103 @@ def plot_result_dashboard(metrics: pd.DataFrame, best: Evaluation) -> None:
     plt.close()
 
 
+def write_model_artifacts(
+    name: str,
+    curve: pd.DataFrame,
+    result: Evaluation,
+    y_test: pd.Series,
+    scores: np.ndarray,
+) -> None:
+    model_dir = MODEL_REPORTS / name
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    pred = (scores >= result.threshold).astype(int)
+    pd.DataFrame(
+        {
+            "sample_index": y_test.index,
+            "y_true": y_test.to_numpy(),
+            "score_fail": scores,
+            "y_pred": pred,
+        }
+    ).to_csv(model_dir / "test_predictions.csv", index=False)
+    curve.to_csv(model_dir / "validation_threshold_curve.csv", index=False)
+    pd.DataFrame(
+        {
+            "metric": [
+                "threshold",
+                "accuracy",
+                "recall_fail",
+                "precision_fail",
+                "f1_fail",
+                "f2_fail",
+                "pr_auc",
+                "false_alarm_count",
+                "missed_fail_count",
+            ],
+            "value": [
+                result.threshold,
+                result.accuracy,
+                result.recall_fail,
+                result.precision_fail,
+                result.f1_fail,
+                result.f2_fail,
+                result.pr_auc,
+                result.false_alarm_count,
+                result.missed_fail_count,
+            ],
+        }
+    ).to_csv(model_dir / "summary.csv", index=False)
+
+    plot_model_precision_recall(name, scores, y_test, model_dir / "precision_recall_curve.png")
+    plot_threshold_curve(curve, name, model_dir / "threshold_tradeoff.png")
+    plot_confusion(result.confusion, name, model_dir / "confusion_matrix.png")
+
+
+def write_model_comparison_report(metrics: pd.DataFrame) -> None:
+    rows = [
+        "| model | threshold | accuracy | fail_recall | fail_precision | fail_f2 | pr_auc | missed_fail | false_alarm | note |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+    ]
+    for row in metrics.itertuples(index=False):
+        rows.append(
+            f"| {row.name} | {row.threshold:.2f} | {row.accuracy:.4f} | {row.recall_fail:.4f} | "
+            f"{row.precision_fail:.4f} | {row.f2_fail:.4f} | {row.pr_auc:.4f} | "
+            f"{row.missed_fail_count} | {row.false_alarm_count} | {row.note} |"
+        )
+
+    best = metrics.iloc[0]
+    all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
+    report = f"""# Model Comparison Report
+
+## Purpose
+
+This report compares baseline and tree-based models for SECOM fail detection under the same train/validation/test split. Thresholds are selected on the validation set by F2 score, then evaluated once on the held-out test set.
+
+## Result Table
+
+{chr(10).join(rows)}
+
+## Interpretation
+
+- Best F2 model: `{best["name"]}` with fail recall {best["recall_fail"]:.4f}, fail precision {best["precision_fail"]:.4f}, and F2 {best["f2_fail"]:.4f}.
+- The all-pass baseline reaches {all_pass["accuracy"]:.4f} accuracy, but it misses all {int(all_pass["missed_fail_count"])} fail cases.
+- Compared with `random_forest_balanced`, `extra_trees_balanced` keeps the same test fail recall while reducing false alarms from 86 to 66.
+- This is still a decision-support PoC, not a production-ready FDC model. The main value is the explicit metric, threshold, and trade-off analysis.
+
+## Per-Model Artifacts
+
+Each trained model has these generated files under `reports/models/<model_name>/`:
+
+- `summary.csv`
+- `validation_threshold_curve.csv`
+- `test_predictions.csv`
+- `precision_recall_curve.png`
+- `threshold_tradeoff.png`
+- `confusion_matrix.png`
+"""
+    (REPORTS / "model_comparison.md").write_text(report, encoding="utf-8")
+
+
 def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.DataFrame) -> None:
     sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
     missing_profile = pd.read_csv(REPORTS / "missing_profile.csv")
@@ -459,6 +627,17 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.Data
     for row in top_features.head(10).itertuples(index=False):
         feature_lines.append(f"| {row.feature} | {row.importance:.6f} |")
     feature_table = "\n".join(feature_lines)
+
+    metric_lines = [
+        "| model | threshold | accuracy | fail_recall | fail_f2 | pr_auc | missed_fail | false_alarm |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in metrics.itertuples(index=False):
+        metric_lines.append(
+            f"| {row.name} | {row.threshold:.2f} | {row.accuracy:.4f} | {row.recall_fail:.4f} | "
+            f"{row.f2_fail:.4f} | {row.pr_auc:.4f} | {row.missed_fail_count} | {row.false_alarm_count} |"
+        )
+    metrics_table = "\n".join(metric_lines)
 
     tn, fp = best.confusion[0]
     fn, tp = best.confusion[1]
@@ -504,6 +683,12 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.Data
 
 An all-pass rule reaches {all_pass.accuracy:.4f} accuracy on the test split, but its fail recall is {all_pass.recall_fail:.4f}. This is why the project reports Fail Recall, F2, and PR-AUC instead of treating accuracy as the primary metric.
 
+## Model Comparison
+
+{metrics_table}
+
+Per-model PR curves, threshold curves, confusion matrices, and test predictions are saved under `reports/models/<model_name>/`.
+
 ## Top Sensor Candidates
 
 {feature_table}
@@ -518,6 +703,7 @@ An all-pass rule reaches {all_pass.accuracy:.4f} accuracy on the test split, but
 def main() -> None:
     REPORTS.mkdir(parents=True, exist_ok=True)
     FIGURES.mkdir(parents=True, exist_ok=True)
+    MODEL_REPORTS.mkdir(parents=True, exist_ok=True)
     x, y = load_data()
     write_data_profile(x, y)
     plot_class_balance(y)
@@ -548,7 +734,7 @@ def main() -> None:
 
     all_pass_scores = np.zeros(len(y_test))
     all_pass = evaluate("all_pass_baseline", 1.0, y_test, all_pass_scores)
-    rows.append(all_pass.__dict__)
+    rows.append({**all_pass.__dict__, "note": model_notes()[all_pass.name]})
     test_scores_by_model[all_pass.name] = all_pass_scores
 
     for name, model in build_models().items():
@@ -559,7 +745,8 @@ def main() -> None:
         test_scores = positive_scores(model, x_test)
         result = evaluate(name, threshold, y_test, test_scores)
 
-        rows.append(result.__dict__)
+        write_model_artifacts(name, curve, result, y_test, test_scores)
+        rows.append({**result.__dict__, "note": model_notes()[name]})
         models[name] = model
         curves[name] = curve
         test_scores_by_model[name] = test_scores
@@ -594,6 +781,7 @@ def main() -> None:
     plot_feature_importance(top_features)
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
+    write_model_comparison_report(metrics)
     write_summary(best, top_features, metrics)
     print(f"saved reports: {REPORTS}")
 
