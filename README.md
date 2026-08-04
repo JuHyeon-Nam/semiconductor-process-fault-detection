@@ -23,7 +23,7 @@
 | Key Metric | Fail Recall / F2 / PR-AUC, not plain Accuracy |
 | Best Test Result | Fail Recall **0.7619**, Fail F2 **0.4819** |
 | Baseline Check | All-pass baseline reaches **0.9331 accuracy** but **0.0000 fail recall** |
-| Main Output | Data quality profile, model comparison, per-model threshold artifacts, sensor candidates |
+| Main Output | Data quality profile, model comparison, threshold artifacts, interpretability reports |
 
 ![Result dashboard](reports/figures/result_dashboard.png)
 
@@ -40,7 +40,7 @@
 3. 모델을 여러 개 비교하되, Accuracy보다 불량 미탐을 줄이는 Recall/F2를 본다.
 4. 임계값은 test set이 아니라 validation set에서 먼저 결정한다.
 5. 최종 test set에서 성능을 확인한다.
-6. feature importance로 주요 센서 후보를 정리한다.
+6. built-in importance와 permutation importance로 주요 센서 후보를 정리한다.
 
 이 접근은 특정 회사 한 곳이 아니라, **삼성전자 DS, SK하이닉스, 반도체 장비사, 스마트팩토리/제조AI 직무**에서 공통으로 요구되는 데이터 기반 문제해결 흐름을 보여주기 위한 것입니다.
 
@@ -177,7 +177,7 @@ Interpretation:
 
 ## Sensor Candidate Interpretation
 
-Top sensor candidates from the best model:
+Top built-in feature importance candidates from the best model:
 
 | Rank | Sensor | Importance |
 |---:|---|---:|
@@ -194,7 +194,32 @@ Top sensor candidates from the best model:
 
 ![Feature importance](reports/figures/feature_importance.png)
 
+Top validation permutation importance candidates:
+
+| Rank | Sensor | Mean AP Drop |
+|---:|---|---:|
+| 1 | sensor_064 | 0.023783 |
+| 2 | sensor_065 | 0.012138 |
+| 3 | sensor_037 | 0.009045 |
+| 4 | sensor_028 | 0.005910 |
+| 5 | sensor_419 | 0.005770 |
+| 6 | sensor_076 | 0.005670 |
+| 7 | sensor_210 | 0.005547 |
+| 8 | sensor_031 | 0.005145 |
+| 9 | sensor_295 | 0.004913 |
+| 10 | sensor_125 | 0.004687 |
+
+![Permutation importance](reports/figures/permutation_importance.png)
+
+![Importance comparison](reports/figures/importance_comparison.png)
+
 Because SECOM anonymizes sensors, the interpretation is framed as **sensor candidate prioritization** rather than direct physical root-cause naming. In a real fab environment, these candidates would be mapped back to process/equipment tags for process or equipment engineer review.
+
+Built-in tree importance and permutation importance are intentionally reported together:
+
+- Built-in importance shows which sensors the fitted ensemble used often when splitting.
+- Permutation importance checks whether validation PR-AUC drops when a sensor is shuffled.
+- Overlapping candidates such as `sensor_064`, `sensor_065`, and `sensor_028` are stronger review candidates than a single ranking alone.
 
 ---
 
@@ -221,11 +246,14 @@ Generated outputs:
 - `reports/split_class_profile.csv`
 - `reports/threshold_curve_best.csv`
 - `reports/top_features.csv`
+- `reports/permutation_importance.csv`
+- `reports/importance_comparison.csv`
 - `reports/models/<model_name>/summary.csv`
 - `reports/models/<model_name>/validation_threshold_curve.csv`
 - `reports/models/<model_name>/test_predictions.csv`
 - `reports/models/<model_name>/*.png`
 - `reports/figures/*.png`
+- `docs/interview_notes.md`
 - `docs/upgrade_checklist.md`
 
 ---
@@ -238,6 +266,7 @@ Generated outputs:
 ├── LICENSE
 ├── requirements.txt
 ├── docs
+│   ├── interview_notes.md
 │   └── upgrade_checklist.md
 ├── src
 │   ├── fetch_data.py
@@ -245,6 +274,7 @@ Generated outputs:
 └── reports
     ├── class_profile.csv
     ├── high_correlation_pairs.csv
+    ├── importance_comparison.csv
     ├── metrics.csv
     ├── model_comparison.md
     ├── missing_profile.csv
@@ -257,6 +287,7 @@ Generated outputs:
     │       ├── threshold_tradeoff.png
     │       └── validation_threshold_curve.csv
     ├── run_summary.md
+    ├── permutation_importance.csv
     ├── sensor_quality_profile.csv
     ├── split_class_profile.csv
     ├── top_features.csv
@@ -271,7 +302,9 @@ Generated outputs:
         ├── precision_recall_curve.png
         ├── threshold_tradeoff.png
         ├── confusion_matrix_best.png
-        └── feature_importance.png
+        ├── feature_importance.png
+        ├── importance_comparison.png
+        └── permutation_importance.png
 ```
 
 ---
@@ -284,20 +317,20 @@ Generated outputs:
 | ML modeling | multiple baseline models, class-weight comparison, per-model artifacts |
 | Metric judgment | Recall/F2/PR-AUC over plain Accuracy |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
-| Engineer-facing interpretation | top sensor candidates and confusion-matrix trade-off |
+| Engineer-facing interpretation | built-in/permutation sensor candidates and confusion-matrix trade-off |
 | Reproducibility | raw data download script and generated reports |
 
 ---
 
 ## Interview Summary
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 feature importance로 정리해 FDC, 설비 이상탐지, 수율 개선 관점으로 확장할 수 있게 분석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in importance와 permutation importance를 함께 보고, FDC/설비 이상탐지/수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
 
 ---
 
 ## Next Improvements
 
-- Add SHAP-based local/global explanations
+- Add optional SHAP-based local/global explanations
 - Add cost-sensitive thresholding with assumed inspection/failure cost
 - Add anomaly detection baseline such as Isolation Forest or AutoEncoder
 - Add process-tag mapping if a non-anonymized fab dataset is available

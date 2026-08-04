@@ -83,6 +83,39 @@ Per-model PR curves, threshold curves, confusion matrices, and test predictions 
 | sensor_130 | 0.004874 |
 | sensor_452 | 0.004635 |
 
+## Permutation Importance
+
+Permutation importance is calculated on the validation split with average precision scoring. It answers: if a sensor is randomly shuffled, how much does fail-detection ranking quality drop?
+
+| feature | permutation_importance_mean | std |
+|---|---:|---:|
+| sensor_064 | 0.023783 | 0.012989 |
+| sensor_065 | 0.012138 | 0.009946 |
+| sensor_037 | 0.009045 | 0.002907 |
+| sensor_028 | 0.005910 | 0.006846 |
+| sensor_419 | 0.005770 | 0.003499 |
+| sensor_076 | 0.005670 | 0.002932 |
+| sensor_210 | 0.005547 | 0.003664 |
+| sensor_031 | 0.005145 | 0.002841 |
+| sensor_295 | 0.004913 | 0.001205 |
+| sensor_125 | 0.004687 | 0.004729 |
+
+## Importance Comparison
+
+Built-in tree importance and permutation importance are complementary. Built-in importance shows how the fitted ensemble used features internally, while permutation importance checks whether validation performance depends on each feature.
+
+| feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |
+|---|---:|---:|---:|---:|
+| sensor_064 | 3 | 1 | 0.007861 | 0.023783 |
+| sensor_065 | 5 | 2 | 0.006011 | 0.012138 |
+| sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005770 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004687 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004310 |
+| sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
+| sensor_510 | 23 | 18 | 0.003809 | 0.003521 |
+| sensor_316 | 14 | 22 | 0.004293 | 0.003171 |
+
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 feature importance로 정리해 FDC, 설비 이상탐지, 수율 개선 관점으로 확장할 수 있게 분석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.

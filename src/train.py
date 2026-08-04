@@ -19,6 +19,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
+from sklearn.inspection import permutation_importance
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -234,6 +235,49 @@ def feature_importance(model: Pipeline, x_train: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def permutation_importance_report(
+    model: Pipeline,
+    x_valid: pd.DataFrame,
+    y_valid: pd.Series,
+    n_repeats: int = 5,
+) -> pd.DataFrame:
+    result = permutation_importance(
+        model,
+        x_valid,
+        y_valid,
+        scoring="average_precision",
+        n_repeats=n_repeats,
+        random_state=42,
+        n_jobs=-1,
+    )
+    return (
+        pd.DataFrame(
+            {
+                "feature": x_valid.columns,
+                "permutation_importance_mean": result.importances_mean,
+                "permutation_importance_std": result.importances_std,
+            }
+        )
+        .sort_values("permutation_importance_mean", ascending=False)
+        .head(30)
+    )
+
+
+def compare_importance(
+    built_in: pd.DataFrame,
+    permutation: pd.DataFrame,
+) -> pd.DataFrame:
+    built = built_in.reset_index(drop=True).reset_index().rename(columns={"index": "built_in_rank"})
+    built["built_in_rank"] += 1
+    perm = permutation.reset_index(drop=True).reset_index().rename(columns={"index": "permutation_rank"})
+    perm["permutation_rank"] += 1
+    compared = built.merge(perm, on="feature", how="outer")
+    return compared.sort_values(
+        ["permutation_rank", "built_in_rank"],
+        na_position="last",
+    )
+
+
 def write_data_profile(x: pd.DataFrame, y: pd.Series) -> None:
     class_profile = y.value_counts().sort_index().rename(index={0: "pass", 1: "fail"}).reset_index()
     class_profile.columns = ["class", "count"]
@@ -441,6 +485,46 @@ def plot_feature_importance(top_features: pd.DataFrame) -> None:
     plt.close()
 
 
+def plot_permutation_importance(permutation_features: pd.DataFrame) -> None:
+    if permutation_features.empty:
+        return
+    top = permutation_features.head(15).iloc[::-1]
+    plt.figure(figsize=(7, 5))
+    plt.barh(
+        top["feature"],
+        top["permutation_importance_mean"],
+        xerr=top["permutation_importance_std"],
+        color="#54a24b",
+        alpha=0.9,
+    )
+    plt.title("Permutation Importance on Validation Set")
+    plt.xlabel("Drop in average precision when shuffled")
+    plt.tight_layout()
+    plt.savefig(FIGURES / "permutation_importance.png", dpi=180)
+    plt.close()
+
+
+def plot_importance_comparison(comparison: pd.DataFrame) -> None:
+    overlap = comparison.dropna(subset=["built_in_rank", "permutation_rank"]).copy()
+    if overlap.empty:
+        return
+    overlap = overlap.sort_values("permutation_rank").head(15)
+    x_pos = np.arange(len(overlap))
+    width = 0.38
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(x_pos - width / 2, overlap["built_in_rank"], width, label="Built-in rank", color="#f58518")
+    plt.bar(x_pos + width / 2, overlap["permutation_rank"], width, label="Permutation rank", color="#54a24b")
+    plt.gca().invert_yaxis()
+    plt.xticks(x_pos, overlap["feature"], rotation=35, ha="right")
+    plt.ylabel("Rank, lower is more important")
+    plt.title("Built-in vs Permutation Importance Rank")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(FIGURES / "importance_comparison.png", dpi=180)
+    plt.close()
+
+
 def plot_accuracy_warning(metrics: pd.DataFrame) -> None:
     ordered = metrics.sort_values("accuracy", ascending=False)
     labels = ordered["name"].tolist()
@@ -605,7 +689,13 @@ Each trained model has these generated files under `reports/models/<model_name>/
     (REPORTS / "model_comparison.md").write_text(report, encoding="utf-8")
 
 
-def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.DataFrame) -> None:
+def write_summary(
+    best: Evaluation,
+    top_features: pd.DataFrame,
+    permutation_features: pd.DataFrame,
+    importance_comparison: pd.DataFrame,
+    metrics: pd.DataFrame,
+) -> None:
     sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
     missing_profile = pd.read_csv(REPORTS / "missing_profile.csv")
     high_corr = pd.read_csv(REPORTS / "high_correlation_pairs.csv")
@@ -627,6 +717,26 @@ def write_summary(best: Evaluation, top_features: pd.DataFrame, metrics: pd.Data
     for row in top_features.head(10).itertuples(index=False):
         feature_lines.append(f"| {row.feature} | {row.importance:.6f} |")
     feature_table = "\n".join(feature_lines)
+
+    permutation_lines = ["| feature | permutation_importance_mean | std |", "|---|---:|---:|"]
+    for row in permutation_features.head(10).itertuples(index=False):
+        permutation_lines.append(
+            f"| {row.feature} | {row.permutation_importance_mean:.6f} | "
+            f"{row.permutation_importance_std:.6f} |"
+        )
+    permutation_table = "\n".join(permutation_lines)
+
+    comparison_lines = [
+        "| feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    comparison_view = importance_comparison.dropna(subset=["built_in_rank", "permutation_rank"]).head(10)
+    for row in comparison_view.itertuples(index=False):
+        comparison_lines.append(
+            f"| {row.feature} | {int(row.built_in_rank)} | {int(row.permutation_rank)} | "
+            f"{row.importance:.6f} | {row.permutation_importance_mean:.6f} |"
+        )
+    comparison_table = "\n".join(comparison_lines)
 
     metric_lines = [
         "| model | threshold | accuracy | fail_recall | fail_f2 | pr_auc | missed_fail | false_alarm |",
@@ -693,9 +803,21 @@ Per-model PR curves, threshold curves, confusion matrices, and test predictions 
 
 {feature_table}
 
+## Permutation Importance
+
+Permutation importance is calculated on the validation split with average precision scoring. It answers: if a sensor is randomly shuffled, how much does fail-detection ranking quality drop?
+
+{permutation_table}
+
+## Importance Comparison
+
+Built-in tree importance and permutation importance are complementary. Built-in importance shows how the fitted ensemble used features internally, while permutation importance checks whether validation performance depends on each feature.
+
+{comparison_table}
+
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 feature importance로 정리해 FDC, 설비 이상탐지, 수율 개선 관점으로 확장할 수 있게 분석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
 """
     (REPORTS / "run_summary.md").write_text(summary, encoding="utf-8")
 
@@ -773,16 +895,22 @@ def main() -> None:
     best_model = models[best.name]
     top_features = feature_importance(best_model, x_train)
     top_features.to_csv(REPORTS / "top_features.csv", index=False)
+    permutation_features = permutation_importance_report(best_model, x_valid, y_valid)
+    permutation_features.to_csv(REPORTS / "permutation_importance.csv", index=False)
+    importance_comparison = compare_importance(top_features, permutation_features)
+    importance_comparison.to_csv(REPORTS / "importance_comparison.csv", index=False)
     curves[best.name].to_csv(REPORTS / "threshold_curve_best.csv", index=False)
 
     plot_precision_recall(test_scores_by_model, y_test)
     plot_threshold_curve(curves[best.name], best.name)
     plot_confusion(best.confusion, best.name)
     plot_feature_importance(top_features)
+    plot_permutation_importance(permutation_features)
+    plot_importance_comparison(importance_comparison)
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
     write_model_comparison_report(metrics)
-    write_summary(best, top_features, metrics)
+    write_summary(best, top_features, permutation_features, importance_comparison, metrics)
     print(f"saved reports: {REPORTS}")
 
 

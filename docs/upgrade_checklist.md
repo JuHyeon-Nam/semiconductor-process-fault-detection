@@ -14,10 +14,10 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Baseline comparison | Improved | `all_pass_baseline` is included in `reports/metrics.csv` and README results. |
 | Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, and all-pass baseline are compared. |
 | Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
-| Interpretability | Partial | Built-in feature importance exists; permutation importance and optional SHAP remain future work. |
+| Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
 | Manufacturing deployment story | Partial | FDC framing exists in README; cost-sensitive thresholding and workflow diagrams remain future work. |
 | System demo | Not started | FastAPI inference endpoint remains future work. |
-| Interview documents | Not started | Dedicated interview notes and semiconductor process notes remain future work. |
+| Interview documents | Partial | `docs/interview_notes.md` exists; semiconductor process notes and one-pager remain future work. |
 
 ## Phase 1 Completed
 
@@ -38,10 +38,20 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `reports/model_comparison.md` for reviewer-friendly model comparison.
 - Updated README result table to reflect the new best model, `extra_trees_balanced`.
 
+## Phase 3 Started
+
+- Added validation-set permutation importance with average precision scoring.
+- Added `reports/permutation_importance.csv`.
+- Added `reports/importance_comparison.csv`.
+- Added `reports/figures/permutation_importance.png`.
+- Added `reports/figures/importance_comparison.png`.
+- Updated README and run summary to explain built-in importance vs permutation importance.
+- Added `docs/interview_notes.md` with a simple project explanation and sensor-anonymization interview answer.
+
 ## Next Implementation Queue
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
-2. Phase 3: add permutation importance and compare it with built-in feature importance.
+2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
 3. Phase 4: add cost-sensitive threshold analysis with assumed false alarm and missed failure costs.
 4. Phase 5: add a small FastAPI demo with `/health`, `/model-info`, and `/predict`.
-5. Phase 6: add `docs/interview_notes.md`, `docs/semiconductor_process_notes.md`, and `docs/portfolio_onepager.md`.
+5. Phase 6: add `docs/semiconductor_process_notes.md` and `docs/portfolio_onepager.md`.
