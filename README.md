@@ -1,14 +1,14 @@
 # Semiconductor Manufacturing Fault Detection
 
 > 반도체 제조 공정 센서 데이터 기반 **불량 예측 · 임계값 최적화 · 센서 원인 후보 해석** 프로젝트  
-> Manufacturing AI / FDC / Yield Engineering / Process Monitoring Portfolio
+> FDC-style fail risk screening with imbalanced process sensor data
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=flat-square&logo=scikitlearn&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-EDA-150458?style=flat-square&logo=pandas&logoColor=white)
 ![NumPy](https://img.shields.io/badge/NumPy-Numerical-013243?style=flat-square&logo=numpy&logoColor=white)
 ![matplotlib](https://img.shields.io/badge/matplotlib-Visualization-11557C?style=flat-square)
-![Manufacturing AI](https://img.shields.io/badge/Manufacturing_AI-FDC%20%7C%20Yield%20%7C%20PdM-0B3D91?style=flat-square)
+![FDC](https://img.shields.io/badge/FDC-Fail%20Risk%20Screening-0B3D91?style=flat-square)
 
 ---
 
@@ -42,7 +42,7 @@
 5. 최종 test set에서 성능을 확인한다.
 6. built-in importance와 permutation importance로 주요 센서 후보를 정리한다.
 
-이 접근은 특정 회사 한 곳이 아니라, **삼성전자 DS, SK하이닉스, 반도체 장비사, 스마트팩토리/제조AI 직무**에서 공통으로 요구되는 데이터 기반 문제해결 흐름을 보여주기 위한 것입니다.
+이 프로젝트의 초점은 모델 성능 과장이 아니라, 제조 센서 데이터에서 결측, 불균형, 임계값 선택, 불량 미탐 비용, 센서 후보 해석을 일관된 분석 흐름으로 다루는 것입니다.
 
 ---
 
@@ -309,22 +309,16 @@ Generated outputs:
 
 ---
 
-## What This Demonstrates
+## Project Scope
 
-| Capability | Evidence |
+| Focus | Evidence |
 |---|---|
-| Manufacturing data understanding | imbalance, missingness, sensor-candidate framing |
-| ML modeling | multiple baseline models, class-weight comparison, per-model artifacts |
-| Metric judgment | Recall/F2/PR-AUC over plain Accuracy |
+| Data quality | imbalance, missingness, zero-variance sensors, correlated sensor pairs |
+| Model comparison | all-pass baseline, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting |
+| Metric design | Fail Recall, F2, PR-AUC, missed fail count, false alarm count |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
-| Engineer-facing interpretation | built-in/permutation sensor candidates and confusion-matrix trade-off |
+| Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | Reproducibility | raw data download script and generated reports |
-
----
-
-## Interview Summary
-
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in importance와 permutation importance를 함께 보고, FDC/설비 이상탐지/수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
 
 ---
 
