@@ -68,6 +68,16 @@ An all-pass rule reaches 0.9331 accuracy on the test split, but its fail recall 
 
 Per-model PR curves, threshold curves, confusion matrices, and test predictions are saved under `reports/models/<model_name>/`.
 
+## Cost-Sensitive Threshold Analysis
+
+The costs below are hypothetical units, not real fab economics. Thresholds are selected on validation data, then evaluated on the held-out test split.
+
+| scenario | FA cost | missed fail cost | threshold | test missed fail | test false alarm | test recall | test cost/100 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| balanced_review | 1.0 | 10.0 | 0.10 | 5 | 66 | 0.7619 | 36.94 |
+| yield_risk_sensitive | 1.0 | 25.0 | 0.06 | 1 | 207 | 0.9524 | 73.89 |
+| escape_critical | 1.0 | 50.0 | 0.06 | 1 | 207 | 0.9524 | 81.85 |
+
 ## Top Sensor Candidates
 
 | feature | importance |
@@ -89,16 +99,16 @@ Permutation importance is calculated on the validation split with average precis
 
 | feature | permutation_importance_mean | std |
 |---|---:|---:|
-| sensor_064 | 0.023783 | 0.012989 |
-| sensor_065 | 0.012138 | 0.009946 |
-| sensor_037 | 0.009045 | 0.002907 |
-| sensor_028 | 0.005910 | 0.006846 |
-| sensor_419 | 0.005770 | 0.003499 |
-| sensor_076 | 0.005670 | 0.002932 |
-| sensor_210 | 0.005547 | 0.003664 |
-| sensor_031 | 0.005145 | 0.002841 |
-| sensor_295 | 0.004913 | 0.001205 |
-| sensor_125 | 0.004687 | 0.004729 |
+| sensor_064 | 0.023804 | 0.012989 |
+| sensor_065 | 0.012164 | 0.009941 |
+| sensor_037 | 0.009071 | 0.002911 |
+| sensor_028 | 0.005932 | 0.006846 |
+| sensor_419 | 0.005792 | 0.003499 |
+| sensor_076 | 0.005696 | 0.002924 |
+| sensor_210 | 0.005569 | 0.003664 |
+| sensor_031 | 0.005167 | 0.002846 |
+| sensor_295 | 0.004935 | 0.001205 |
+| sensor_125 | 0.004709 | 0.004729 |
 
 ## Importance Comparison
 
@@ -106,16 +116,16 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 | feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |
 |---|---:|---:|---:|---:|
-| sensor_064 | 3 | 1 | 0.007861 | 0.023783 |
-| sensor_065 | 5 | 2 | 0.006011 | 0.012138 |
-| sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
-| sensor_419 | 29 | 5 | 0.003657 | 0.005770 |
-| sensor_125 | 27 | 10 | 0.003738 | 0.004687 |
-| sensor_499 | 24 | 13 | 0.003788 | 0.004310 |
-| sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
-| sensor_510 | 23 | 18 | 0.003809 | 0.003521 |
-| sensor_316 | 14 | 22 | 0.004293 | 0.003171 |
+| sensor_064 | 3 | 1 | 0.007861 | 0.023804 |
+| sensor_065 | 5 | 2 | 0.006011 | 0.012164 |
+| sensor_028 | 7 | 4 | 0.005651 | 0.005932 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005792 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004709 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004327 |
+| sensor_129 | 1 | 15 | 0.009227 | 0.003868 |
+| sensor_510 | 23 | 18 | 0.003809 | 0.003542 |
+| sensor_316 | 14 | 22 | 0.004293 | 0.003193 |
 
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.

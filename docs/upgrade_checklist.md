@@ -15,7 +15,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, and all-pass baseline are compared. |
 | Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
 | Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
-| Manufacturing deployment story | Partial | FDC framing exists in README; cost-sensitive thresholding and workflow diagrams remain future work. |
+| Manufacturing deployment story | Improved | FDC framing and cost-sensitive thresholding exist; workflow diagrams remain future work. |
 | System demo | Not started | FastAPI inference endpoint remains future work. |
 | Interview documents | Partial | `docs/interview_notes.md` exists; semiconductor process notes and one-pager remain future work. |
 
@@ -48,10 +48,18 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Updated README and run summary to explain built-in importance vs permutation importance.
 - Added `docs/interview_notes.md` with a simple project explanation and sensor-anonymization interview answer.
 
+## Phase 4 Started
+
+- Added cost-sensitive threshold scenarios with assumed false alarm and missed fail costs.
+- Added `reports/cost_threshold_analysis.csv`.
+- Added `reports/cost_threshold_curves.csv`.
+- Added `reports/figures/cost_threshold_analysis.png`.
+- Updated README and run summary to explain how threshold changes when missed failures are more expensive.
+
 ## Next Implementation Queue
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
-3. Phase 4: add cost-sensitive threshold analysis with assumed false alarm and missed failure costs.
+3. Phase 4 residual: add a compact FDC operating workflow diagram.
 4. Phase 5: add a small FastAPI demo with `/health`, `/model-info`, and `/predict`.
 5. Phase 6: add `docs/semiconductor_process_notes.md` and `docs/portfolio_onepager.md`.

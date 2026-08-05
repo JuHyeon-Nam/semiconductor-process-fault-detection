@@ -201,6 +201,108 @@ def choose_threshold(y_valid: pd.Series, valid_scores: np.ndarray) -> tuple[floa
     return float(best["threshold"]), curve
 
 
+def cost_scenarios() -> list[dict[str, float | str]]:
+    return [
+        {
+            "scenario": "balanced_review",
+            "false_alarm_cost": 1.0,
+            "missed_fail_cost": 10.0,
+            "description": "One missed fail is treated like ten extra engineering reviews.",
+        },
+        {
+            "scenario": "yield_risk_sensitive",
+            "false_alarm_cost": 1.0,
+            "missed_fail_cost": 25.0,
+            "description": "Missed fail risk is weighted heavily for yield-risk screening.",
+        },
+        {
+            "scenario": "escape_critical",
+            "false_alarm_cost": 1.0,
+            "missed_fail_cost": 50.0,
+            "description": "Missed fail is treated as much more expensive than false alarm review.",
+        },
+    ]
+
+
+def cost_curve(
+    y_true: pd.Series,
+    scores: np.ndarray,
+    false_alarm_cost: float,
+    missed_fail_cost: float,
+) -> pd.DataFrame:
+    rows = []
+    for threshold in np.linspace(0.02, 0.80, 40):
+        pred = (scores >= threshold).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_true, pred, labels=[0, 1]).ravel()
+        total_cost = fp * false_alarm_cost + fn * missed_fail_cost
+        rows.append(
+            {
+                "threshold": threshold,
+                "false_alarm_count": int(fp),
+                "missed_fail_count": int(fn),
+                "true_fail_detected": int(tp),
+                "recall_fail": recall_score(y_true, pred, zero_division=0),
+                "precision_fail": precision_score(y_true, pred, zero_division=0),
+                "total_cost": float(total_cost),
+                "cost_per_100_samples": float(total_cost / len(y_true) * 100),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def cost_sensitive_threshold_report(
+    y_valid: pd.Series,
+    valid_scores: np.ndarray,
+    y_test: pd.Series,
+    test_scores: np.ndarray,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    summaries = []
+    curves = []
+
+    for scenario in cost_scenarios():
+        scenario_name = str(scenario["scenario"])
+        false_alarm_cost = float(scenario["false_alarm_cost"])
+        missed_fail_cost = float(scenario["missed_fail_cost"])
+
+        valid_curve = cost_curve(y_valid, valid_scores, false_alarm_cost, missed_fail_cost)
+        valid_curve.insert(0, "scenario", scenario_name)
+        valid_curve.insert(1, "split", "validation")
+        valid_curve["false_alarm_cost"] = false_alarm_cost
+        valid_curve["missed_fail_cost"] = missed_fail_cost
+        curves.append(valid_curve)
+
+        selected = valid_curve.sort_values(
+            ["total_cost", "missed_fail_count", "false_alarm_count"],
+            ascending=True,
+        ).iloc[0]
+        threshold = float(selected["threshold"])
+        test_pred = (test_scores >= threshold).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y_test, test_pred, labels=[0, 1]).ravel()
+        test_total_cost = fp * false_alarm_cost + fn * missed_fail_cost
+
+        summaries.append(
+            {
+                "scenario": scenario_name,
+                "description": scenario["description"],
+                "false_alarm_cost": false_alarm_cost,
+                "missed_fail_cost": missed_fail_cost,
+                "selected_threshold_from_validation": threshold,
+                "validation_total_cost": float(selected["total_cost"]),
+                "validation_cost_per_100_samples": float(selected["cost_per_100_samples"]),
+                "validation_false_alarm_count": int(selected["false_alarm_count"]),
+                "validation_missed_fail_count": int(selected["missed_fail_count"]),
+                "test_total_cost": float(test_total_cost),
+                "test_cost_per_100_samples": float(test_total_cost / len(y_test) * 100),
+                "test_false_alarm_count": int(fp),
+                "test_missed_fail_count": int(fn),
+                "test_fail_recall": recall_score(y_test, test_pred, zero_division=0),
+                "test_fail_precision": precision_score(y_test, test_pred, zero_division=0),
+            }
+        )
+
+    return pd.DataFrame(summaries), pd.concat(curves, ignore_index=True)
+
+
 def evaluate(name: str, threshold: float, y_test: pd.Series, scores: np.ndarray) -> Evaluation:
     pred = (scores >= threshold).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_test, pred, labels=[0, 1]).ravel()
@@ -248,7 +350,7 @@ def permutation_importance_report(
         scoring="average_precision",
         n_repeats=n_repeats,
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
     )
     return (
         pd.DataFrame(
@@ -525,6 +627,30 @@ def plot_importance_comparison(comparison: pd.DataFrame) -> None:
     plt.close()
 
 
+def plot_cost_threshold_curves(cost_curves: pd.DataFrame, cost_summary: pd.DataFrame) -> None:
+    plt.figure(figsize=(8, 5))
+    for scenario, group in cost_curves.groupby("scenario"):
+        plt.plot(
+            group["threshold"],
+            group["cost_per_100_samples"],
+            label=scenario,
+        )
+        selected = cost_summary.loc[cost_summary["scenario"] == scenario].iloc[0]
+        plt.axvline(
+            selected["selected_threshold_from_validation"],
+            linestyle="--",
+            alpha=0.35,
+        )
+    plt.title("Validation Cost-Sensitive Threshold Analysis")
+    plt.xlabel("Decision threshold")
+    plt.ylabel("Assumed cost per 100 validation samples")
+    plt.legend()
+    plt.grid(alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(FIGURES / "cost_threshold_analysis.png", dpi=180)
+    plt.close()
+
+
 def plot_accuracy_warning(metrics: pd.DataFrame) -> None:
     ordered = metrics.sort_values("accuracy", ascending=False)
     labels = ordered["name"].tolist()
@@ -607,7 +733,7 @@ def write_model_artifacts(
         {
             "sample_index": y_test.index,
             "y_true": y_test.to_numpy(),
-            "score_fail": scores,
+            "score_fail": np.round(scores, 12),
             "y_pred": pred,
         }
     ).to_csv(model_dir / "test_predictions.csv", index=False)
@@ -694,6 +820,7 @@ def write_summary(
     top_features: pd.DataFrame,
     permutation_features: pd.DataFrame,
     importance_comparison: pd.DataFrame,
+    cost_summary: pd.DataFrame,
     metrics: pd.DataFrame,
 ) -> None:
     sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
@@ -749,6 +876,18 @@ def write_summary(
         )
     metrics_table = "\n".join(metric_lines)
 
+    cost_lines = [
+        "| scenario | FA cost | missed fail cost | threshold | test missed fail | test false alarm | test recall | test cost/100 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in cost_summary.itertuples(index=False):
+        cost_lines.append(
+            f"| {row.scenario} | {row.false_alarm_cost:.1f} | {row.missed_fail_cost:.1f} | "
+            f"{row.selected_threshold_from_validation:.2f} | {row.test_missed_fail_count} | "
+            f"{row.test_false_alarm_count} | {row.test_fail_recall:.4f} | {row.test_cost_per_100_samples:.2f} |"
+        )
+    cost_table = "\n".join(cost_lines)
+
     tn, fp = best.confusion[0]
     fn, tp = best.confusion[1]
     all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
@@ -799,6 +938,12 @@ An all-pass rule reaches {all_pass.accuracy:.4f} accuracy on the test split, but
 
 Per-model PR curves, threshold curves, confusion matrices, and test predictions are saved under `reports/models/<model_name>/`.
 
+## Cost-Sensitive Threshold Analysis
+
+The costs below are hypothetical units, not real fab economics. Thresholds are selected on validation data, then evaluated on the held-out test split.
+
+{cost_table}
+
 ## Top Sensor Candidates
 
 {feature_table}
@@ -817,7 +962,7 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
 """
     (REPORTS / "run_summary.md").write_text(summary, encoding="utf-8")
 
@@ -899,6 +1044,16 @@ def main() -> None:
     permutation_features.to_csv(REPORTS / "permutation_importance.csv", index=False)
     importance_comparison = compare_importance(top_features, permutation_features)
     importance_comparison.to_csv(REPORTS / "importance_comparison.csv", index=False)
+    best_valid_scores = positive_scores(best_model, x_valid)
+    best_test_scores = test_scores_by_model[best.name]
+    cost_summary, cost_curves = cost_sensitive_threshold_report(
+        y_valid,
+        best_valid_scores,
+        y_test,
+        best_test_scores,
+    )
+    cost_summary.to_csv(REPORTS / "cost_threshold_analysis.csv", index=False)
+    cost_curves.to_csv(REPORTS / "cost_threshold_curves.csv", index=False)
     curves[best.name].to_csv(REPORTS / "threshold_curve_best.csv", index=False)
 
     plot_precision_recall(test_scores_by_model, y_test)
@@ -907,10 +1062,11 @@ def main() -> None:
     plot_feature_importance(top_features)
     plot_permutation_importance(permutation_features)
     plot_importance_comparison(importance_comparison)
+    plot_cost_threshold_curves(cost_curves, cost_summary)
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
     write_model_comparison_report(metrics)
-    write_summary(best, top_features, permutation_features, importance_comparison, metrics)
+    write_summary(best, top_features, permutation_features, importance_comparison, cost_summary, metrics)
     print(f"saved reports: {REPORTS}")
 
 

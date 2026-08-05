@@ -175,6 +175,28 @@ Interpretation:
 
 ---
 
+## Cost-Sensitive Thresholding
+
+The table below uses hypothetical cost units. It is not a real fab cost model. The purpose is to show how the operating threshold changes when missed failures are treated as more expensive than extra engineering review.
+
+Thresholds are selected on the validation split and then evaluated once on the held-out test split.
+
+| Scenario | False Alarm Cost | Missed Fail Cost | Threshold | Test Missed Fail | Test False Alarm | Test Recall |
+|---|---:|---:|---:|---:|---:|---:|
+| balanced_review | 1 | 10 | 0.10 | 5 | 66 | 0.7619 |
+| yield_risk_sensitive | 1 | 25 | 0.06 | 1 | 207 | 0.9524 |
+| escape_critical | 1 | 50 | 0.06 | 1 | 207 | 0.9524 |
+
+![Cost threshold analysis](reports/figures/cost_threshold_analysis.png)
+
+Interpretation:
+
+- If extra review is acceptable, threshold 0.10 gives fewer false alarms.
+- If missed fail risk is much more expensive, threshold 0.06 catches more fail cases but creates many more review alarms.
+- This is the core FDC operating trade-off: the model score is only useful when paired with an explicit decision policy.
+
+---
+
 ## Sensor Candidate Interpretation
 
 Top built-in feature importance candidates from the best model:
@@ -198,16 +220,16 @@ Top validation permutation importance candidates:
 
 | Rank | Sensor | Mean AP Drop |
 |---:|---|---:|
-| 1 | sensor_064 | 0.023783 |
-| 2 | sensor_065 | 0.012138 |
-| 3 | sensor_037 | 0.009045 |
-| 4 | sensor_028 | 0.005910 |
-| 5 | sensor_419 | 0.005770 |
-| 6 | sensor_076 | 0.005670 |
-| 7 | sensor_210 | 0.005547 |
-| 8 | sensor_031 | 0.005145 |
-| 9 | sensor_295 | 0.004913 |
-| 10 | sensor_125 | 0.004687 |
+| 1 | sensor_064 | 0.023804 |
+| 2 | sensor_065 | 0.012164 |
+| 3 | sensor_037 | 0.009071 |
+| 4 | sensor_028 | 0.005932 |
+| 5 | sensor_419 | 0.005792 |
+| 6 | sensor_076 | 0.005696 |
+| 7 | sensor_210 | 0.005569 |
+| 8 | sensor_031 | 0.005167 |
+| 9 | sensor_295 | 0.004935 |
+| 10 | sensor_125 | 0.004709 |
 
 ![Permutation importance](reports/figures/permutation_importance.png)
 
@@ -248,6 +270,8 @@ Generated outputs:
 - `reports/top_features.csv`
 - `reports/permutation_importance.csv`
 - `reports/importance_comparison.csv`
+- `reports/cost_threshold_analysis.csv`
+- `reports/cost_threshold_curves.csv`
 - `reports/models/<model_name>/summary.csv`
 - `reports/models/<model_name>/validation_threshold_curve.csv`
 - `reports/models/<model_name>/test_predictions.csv`
@@ -273,6 +297,8 @@ Generated outputs:
 │   └── train.py
 └── reports
     ├── class_profile.csv
+    ├── cost_threshold_analysis.csv
+    ├── cost_threshold_curves.csv
     ├── high_correlation_pairs.csv
     ├── importance_comparison.csv
     ├── metrics.csv
@@ -296,6 +322,7 @@ Generated outputs:
         ├── accuracy_warning.png
         ├── result_dashboard.png
         ├── class_imbalance.png
+        ├── cost_threshold_analysis.png
         ├── missingness_distribution.png
         ├── sensor_quality_summary.png
         ├── top_missing_sensors.png
@@ -317,6 +344,7 @@ Generated outputs:
 | Model comparison | all-pass baseline, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting |
 | Metric design | Fail Recall, F2, PR-AUC, missed fail count, false alarm count |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
+| Decision policy | cost-sensitive threshold analysis with explicit false-alarm and missed-fail assumptions |
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | Reproducibility | raw data download script and generated reports |
 
@@ -325,7 +353,7 @@ Generated outputs:
 ## Next Improvements
 
 - Add optional SHAP-based local/global explanations
-- Add cost-sensitive thresholding with assumed inspection/failure cost
+- Add a compact manufacturing workflow diagram
 - Add anomaly detection baseline such as Isolation Forest or AutoEncoder
 - Add process-tag mapping if a non-anonymized fab dataset is available
 - Build a small FastAPI inference endpoint for FDC PoC

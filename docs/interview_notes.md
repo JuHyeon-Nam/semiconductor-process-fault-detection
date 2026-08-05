@@ -2,9 +2,9 @@
 
 ## 30-Second Project Explanation
 
-이 프로젝트는 반도체 제조 공정에서 나오는 센서 데이터를 보고, 최종 제품이 정상인지 불량 위험이 있는지 미리 판단해보는 제조 AI 프로젝트입니다.
+이 프로젝트는 반도체 제조 공정에서 나오는 센서 데이터를 보고, 최종 제품이 정상인지 불량 위험이 있는지 미리 판단해보는 FDC 스타일 제조 데이터 분석 프로젝트입니다.
 
-쉽게 말하면, 설비에서 온도, 압력, 전류, 진동 같은 센서값이 많이 쌓인다고 가정하고, 그 신호 패턴을 이용해서 "이 웨이퍼는 불량 가능성이 있으니 엔지니어가 먼저 확인해야 한다"는 알람 후보를 만드는 작업입니다.
+쉽게 말하면, 설비에서 온도, 압력, 전류, 진동 같은 센서값이 많이 쌓인다고 가정하고, 그 신호 패턴을 이용해서 "이 웨이퍼는 불량 가능성이 있으니 엔지니어가 먼저 확인해야 한다"는 알람 후보를 만드는 작업입니다. 스펙을 직접 튜닝하는 프로젝트라기보다는 수율 리스크를 빨리 찾는 프로젝트에 가깝습니다.
 
 ## What Problem This Solves
 
@@ -20,6 +20,7 @@
 4. test set은 최종 평가에만 사용해서 leakage를 피했습니다.
 5. Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, all-pass baseline을 비교했습니다.
 6. built-in feature importance와 permutation importance를 함께 보고 센서 후보를 정리했습니다.
+7. false alarm과 missed fail의 비용 가정을 바꿔가며 threshold가 어떻게 바뀌는지 분석했습니다.
 
 ## Best Current Result
 
@@ -35,6 +36,16 @@
 | False alarm | 66 |
 
 All-pass baseline은 test accuracy가 0.9331이지만 fail recall은 0.0000입니다. 그래서 accuracy가 아니라 불량 recall과 F2를 중심으로 봤습니다.
+
+## Cost-Sensitive Threshold
+
+현재 best threshold 0.10은 test에서 missed fail 5개, false alarm 66개입니다. 그런데 missed fail 비용을 false alarm보다 훨씬 크게 보면 validation 기준 최적 threshold가 0.06으로 내려갑니다. 이 경우 test recall은 0.9524로 올라가고 missed fail은 1개로 줄지만, false alarm은 207개로 늘어납니다.
+
+이 결과는 모델 성능 자체보다 현장 운영 정책이 중요하다는 점을 보여줍니다. 불량 미탐을 거의 없애야 하는 상황이면 많은 알람을 감수하고 threshold를 낮출 수 있고, 엔지니어 review capacity가 제한적이면 threshold를 높게 유지해야 합니다.
+
+면접 답변 문장:
+
+"저는 threshold를 단순히 0.5로 고정하지 않고 validation set에서 F2와 비용 가정 기준으로 선택했습니다. missed fail 비용을 크게 보면 threshold가 낮아져 recall은 올라가지만 false alarm도 늘어납니다. 그래서 이 모델은 자동 판정기라기보다, 현장의 비용 구조와 review capacity에 맞춰 운영점을 정해야 하는 decision-support 모델로 해석했습니다."
 
 ## Why F2 Instead of Accuracy
 
@@ -80,6 +91,6 @@ Permutation importance는 validation set에서 특정 센서 값을 섞었을 �
 ## What I Would Improve Next
 
 1. Permutation importance를 반복 실행해 중요 센서 안정성을 확인합니다.
-2. false alarm 비용과 missed fail 비용을 가정해 cost-sensitive threshold를 분석합니다.
+2. FDC 운영 흐름도를 추가해 공정 센서, 알람, 엔지니어 review, PM/recipe 조정까지 연결합니다.
 3. FastAPI endpoint를 만들어 `/predict`, `/health`, `/model-info`로 현장 시스템 연결 가능성을 보여줍니다.
 4. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.

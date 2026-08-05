@@ -1,0 +1,4 @@
+scenario,description,false_alarm_cost,missed_fail_cost,selected_threshold_from_validation,validation_total_cost,validation_cost_per_100_samples,validation_false_alarm_count,validation_missed_fail_count,test_total_cost,test_cost_per_100_samples,test_false_alarm_count,test_missed_fail_count,test_fail_recall,test_fail_precision
+balanced_review,One missed fail is treated like ten extra engineering reviews.,1.0,10.0,0.1,169.0,53.82165605095541,89,8,116.0,36.94267515923567,66,5,0.7619047619047619,0.1951219512195122
+yield_risk_sensitive,Missed fail risk is weighted heavily for yield-risk screening.,1.0,25.0,0.06,240.0,76.43312101910828,215,1,232.0,73.88535031847134,207,1,0.9523809523809523,0.0881057268722467
+escape_critical,Missed fail is treated as much more expensive than false alarm review.,1.0,50.0,0.06,265.0,84.39490445859873,215,1,257.0,81.84713375796179,207,1,0.9523809523809523,0.0881057268722467
