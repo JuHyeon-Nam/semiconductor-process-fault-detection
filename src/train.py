@@ -651,6 +651,86 @@ def plot_cost_threshold_curves(cost_curves: pd.DataFrame, cost_summary: pd.DataF
     plt.close()
 
 
+def plot_fdc_operating_workflow() -> None:
+    steps = [
+        ("Process\nsensors", "temperature\npressure\ncurrent\nplasma"),
+        ("Data quality\nchecks", "missingness\nstale sensors\nredundancy"),
+        ("Fail risk\nscore", "trained model\nscore per wafer"),
+        ("Decision\nthreshold", "validation F2\nor cost policy"),
+        ("Alarm\ncandidate", "high-risk wafer\nreview queue"),
+        ("Engineer\nreview", "tool state\nrecipe\nPM history"),
+        ("Action\nfeedback", "inspection\nPM/recipe\nmonitoring"),
+    ]
+
+    colors = ["#4c78a8", "#72b7b2", "#f58518", "#54a24b", "#e45756", "#b279a2", "#9d755d"]
+    fig, ax = plt.subplots(figsize=(13, 4.8))
+    ax.axis("off")
+    ax.set_xlim(0, len(steps))
+    ax.set_ylim(0, 1)
+
+    box_width = 0.82
+    box_height = 0.46
+    y_center = 0.56
+    for index, ((title, detail), color) in enumerate(zip(steps, colors), start=0):
+        x_center = index + 0.5
+        rect = plt.Rectangle(
+            (x_center - box_width / 2, y_center - box_height / 2),
+            box_width,
+            box_height,
+            facecolor=color,
+            edgecolor="#222222",
+            linewidth=1.1,
+            alpha=0.96,
+        )
+        ax.add_patch(rect)
+        ax.text(
+            x_center,
+            y_center + 0.08,
+            title,
+            ha="center",
+            va="center",
+            fontsize=11,
+            fontweight="bold",
+            color="white",
+        )
+        ax.text(
+            x_center,
+            y_center - 0.12,
+            detail,
+            ha="center",
+            va="center",
+            fontsize=8.5,
+            color="white",
+        )
+        if index < len(steps) - 1:
+            ax.annotate(
+                "",
+                xy=(x_center + 0.55, y_center),
+                xytext=(x_center + 0.45, y_center),
+                arrowprops={"arrowstyle": "->", "lw": 1.6, "color": "#333333"},
+            )
+
+    ax.annotate(
+        "",
+        xy=(0.5, 0.25),
+        xytext=(6.5, 0.25),
+        arrowprops={"arrowstyle": "->", "lw": 1.4, "color": "#555555", "connectionstyle": "arc3,rad=-0.12"},
+    )
+    ax.text(
+        3.5,
+        0.08,
+        "Closed-loop learning: reviewed alarms and process outcomes should feed the next validation cycle",
+        ha="center",
+        va="center",
+        fontsize=10,
+        color="#333333",
+    )
+    ax.set_title("FDC-Style Manufacturing Decision-Support Workflow", fontsize=15, fontweight="bold", pad=12)
+    plt.tight_layout()
+    plt.savefig(FIGURES / "fdc_operating_workflow.png", dpi=180)
+    plt.close()
+
+
 def plot_accuracy_warning(metrics: pd.DataFrame) -> None:
     ordered = metrics.sort_values("accuracy", ascending=False)
     labels = ordered["name"].tolist()
@@ -1063,6 +1143,7 @@ def main() -> None:
     plot_permutation_importance(permutation_features)
     plot_importance_comparison(importance_comparison)
     plot_cost_threshold_curves(cost_curves, cost_summary)
+    plot_fdc_operating_workflow()
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
     write_model_comparison_report(metrics)

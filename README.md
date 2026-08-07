@@ -197,6 +197,23 @@ Interpretation:
 
 ---
 
+## Manufacturing Decision Workflow
+
+This project treats the model as a decision-support layer, not as an automatic final judgment system. The intended operating flow is:
+
+1. Process/equipment sensors are collected for each wafer or lot.
+2. Data quality checks remove obvious sensor issues before scoring.
+3. The trained model produces a fail-risk score.
+4. A threshold selected on validation data converts the score into an alarm candidate.
+5. Engineers review the alarm with equipment state, recipe, PM history, and metrology context.
+6. Confirmed outcomes feed back into the next threshold/model validation cycle.
+
+![FDC operating workflow](reports/figures/fdc_operating_workflow.png)
+
+This framing is important because SECOM sensor names are anonymized. The model can prioritize review candidates, but physical root-cause confirmation requires process tags, chamber history, recipe steps, maintenance records, and downstream quality measurements.
+
+---
+
 ## Sensor Candidate Interpretation
 
 Top built-in feature importance candidates from the best model:
@@ -323,6 +340,7 @@ Generated outputs:
         ├── result_dashboard.png
         ├── class_imbalance.png
         ├── cost_threshold_analysis.png
+        ├── fdc_operating_workflow.png
         ├── missingness_distribution.png
         ├── sensor_quality_summary.png
         ├── top_missing_sensors.png
@@ -345,6 +363,7 @@ Generated outputs:
 | Metric design | Fail Recall, F2, PR-AUC, missed fail count, false alarm count |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
 | Decision policy | cost-sensitive threshold analysis with explicit false-alarm and missed-fail assumptions |
+| Manufacturing workflow | FDC-style sensor, scoring, alarm, engineer review, and feedback loop diagram |
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | Reproducibility | raw data download script and generated reports |
 
@@ -353,7 +372,6 @@ Generated outputs:
 ## Next Improvements
 
 - Add optional SHAP-based local/global explanations
-- Add a compact manufacturing workflow diagram
 - Add anomaly detection baseline such as Isolation Forest or AutoEncoder
 - Add process-tag mapping if a non-anonymized fab dataset is available
 - Build a small FastAPI inference endpoint for FDC PoC

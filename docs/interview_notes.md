@@ -87,10 +87,16 @@ Permutation importance는 validation set에서 특정 센서 값을 섞었을 �
 4. validation에서 정한 threshold 이상이면 알람 후보 생성
 5. 엔지니어가 장비 상태, recipe, PM 이력, 계측 결과와 함께 확인
 6. 필요하면 추가 검사, recipe 조정, PM 검토로 연결
+7. 실제 판정 결과와 후속 조치 결과를 다시 모아 다음 validation cycle에서 threshold와 모델을 재검토
+
+이 흐름을 `reports/figures/fdc_operating_workflow.png`로 정리했습니다. 핵심은 모델이 공정 조건을 직접 바꾸는 것이 아니라, 수율 리스크가 커 보이는 wafer/lot을 먼저 엔지니어 검토 대상으로 올리는 것입니다.
+
+면접 답변 문장:
+
+"이 프로젝트는 스펙 값을 직접 맞추는 제어 모델이 아니라 수율 리스크를 조기에 발견하는 FDC-style decision-support 모델입니다. 센서 데이터에서 fail risk score를 만들고, validation에서 정한 threshold를 넘으면 알람 후보로 올린 뒤, 엔지니어가 recipe, PM 이력, chamber 상태, 계측 결과와 함께 확인하는 흐름으로 설계했습니다."
 
 ## What I Would Improve Next
 
 1. Permutation importance를 반복 실행해 중요 센서 안정성을 확인합니다.
-2. FDC 운영 흐름도를 추가해 공정 센서, 알람, 엔지니어 review, PM/recipe 조정까지 연결합니다.
-3. FastAPI endpoint를 만들어 `/predict`, `/health`, `/model-info`로 현장 시스템 연결 가능성을 보여줍니다.
-4. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.
+2. FastAPI endpoint를 만들어 `/predict`, `/health`, `/model-info`로 현장 시스템 연결 가능성을 보여줍니다.
+3. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.
