@@ -95,8 +95,20 @@ Permutation importance는 validation set에서 특정 센서 값을 섞었을 �
 
 "이 프로젝트는 스펙 값을 직접 맞추는 제어 모델이 아니라 수율 리스크를 조기에 발견하는 FDC-style decision-support 모델입니다. 센서 데이터에서 fail risk score를 만들고, validation에서 정한 threshold를 넘으면 알람 후보로 올린 뒤, 엔지니어가 recipe, PM 이력, chamber 상태, 계측 결과와 함께 확인하는 흐름으로 설계했습니다."
 
+## FastAPI Demo Explanation
+
+FastAPI 데모는 모델을 크게 포장하기 위한 배포물이 아니라, 분석 결과가 현장 시스템에 어떻게 연결될 수 있는지 보여주는 최소 구조입니다.
+
+- `/health`: 모델 artifact가 준비되어 있는지 확인
+- `/model-info`: 모델명, threshold, feature 수, test metric 확인
+- `/predict`: 590개 센서값을 받아 fail risk score와 review 여부 반환
+
+면접 답변 문장:
+
+"학습 결과를 보고서로만 끝내지 않고 FastAPI endpoint로 감싸서, MES/FDC나 dashboard가 모델 score를 호출할 수 있는 형태까지 구성했습니다. 다만 production-ready 배포라고 주장하지는 않고, 모델 artifact, 입력 schema, threshold decision이 어떻게 시스템 인터페이스로 연결되는지 보여주는 PoC로 봤습니다."
+
 ## What I Would Improve Next
 
 1. Permutation importance를 반복 실행해 중요 센서 안정성을 확인합니다.
-2. FastAPI endpoint를 만들어 `/predict`, `/health`, `/model-info`로 현장 시스템 연결 가능성을 보여줍니다.
-3. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.
+2. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.
+3. 간단한 one-page summary와 semiconductor process notes를 추가해 프로젝트 설명 자료를 보강합니다.

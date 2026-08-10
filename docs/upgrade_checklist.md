@@ -16,8 +16,8 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
 | Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
-| System demo | Not started | FastAPI inference endpoint remains future work. |
-| Interview documents | Partial | `docs/interview_notes.md` exists; semiconductor process notes and one-pager remain future work. |
+| System demo | Improved | FastAPI `/health`, `/model-info`, and `/predict` endpoints exist with sample input and smoke test. |
+| Interview documents | Improved | Interview notes, semiconductor process notes, and one-page summary exist. |
 
 ## Phase 1 Completed
 
@@ -58,9 +58,23 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `reports/figures/fdc_operating_workflow.png` to connect sensor data, model scoring, alarm review, PM/recipe checks, and feedback.
 - Updated README and interview notes to frame the model as FDC-style manufacturing decision support rather than automatic final judgment.
 
+## Phase 5 Started
+
+- Added trained model artifact generation in `src/train.py`.
+- Added `src/api.py` with FastAPI `/health`, `/model-info`, and `/predict` endpoints.
+- Added `src/make_sample_input.py` to create a reproducible JSON payload from SECOM rows.
+- Added `src/smoke_test_api.py` to verify the API without manually running a server.
+- Updated README with API run commands and endpoint descriptions.
+
+## Phase 6 Started
+
+- Added `docs/semiconductor_process_notes.md` to connect Photo, Etch, Diffusion, Thin Film, and CMP/Cleaning to manufacturing data analysis.
+- Added `docs/portfolio_onepager.md` as a compact project summary.
+- Updated README so these explanation documents are visible from the main page.
+
 ## Next Implementation Queue
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
-3. Phase 5: add a small FastAPI demo with `/health`, `/model-info`, and `/predict`.
-4. Phase 6: add `docs/semiconductor_process_notes.md` and `docs/portfolio_onepager.md`.
+3. Phase 5 residual: add a lightweight dashboard only if it does not distract from the core FDC story.
+4. Phase 6 residual: tighten README screenshots and one-page summary after another full review.

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -30,6 +32,9 @@ RAW = ROOT / "data" / "raw"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 MODEL_REPORTS = REPORTS / "models"
+ARTIFACTS = ROOT / "artifacts"
+MODEL_ARTIFACT = ARTIFACTS / "best_model.joblib"
+MODEL_METADATA = ARTIFACTS / "model_metadata.json"
 
 
 @dataclass(frozen=True)
@@ -850,6 +855,36 @@ def write_model_artifacts(
     plot_confusion(result.confusion, name, model_dir / "confusion_matrix.png")
 
 
+def save_inference_artifact(
+    model: Pipeline,
+    best: Evaluation,
+    feature_names: list[str],
+) -> None:
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "model": model,
+        "model_name": best.name,
+        "threshold": best.threshold,
+        "feature_names": feature_names,
+        "positive_class": "fail",
+        "score_name": "fail_risk_score",
+        "metrics": {
+            "accuracy": best.accuracy,
+            "recall_fail": best.recall_fail,
+            "precision_fail": best.precision_fail,
+            "f1_fail": best.f1_fail,
+            "f2_fail": best.f2_fail,
+            "pr_auc": best.pr_auc,
+            "false_alarm_count": best.false_alarm_count,
+            "missed_fail_count": best.missed_fail_count,
+            "confusion": best.confusion,
+        },
+    }
+    metadata = {key: value for key, value in payload.items() if key != "model"}
+    joblib.dump(payload, MODEL_ARTIFACT)
+    MODEL_METADATA.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+
 def write_model_comparison_report(metrics: pd.DataFrame) -> None:
     rows = [
         "| model | threshold | accuracy | fail_recall | fail_precision | fail_f2 | pr_auc | missed_fail | false_alarm | note |",
@@ -1051,6 +1086,7 @@ def main() -> None:
     REPORTS.mkdir(parents=True, exist_ok=True)
     FIGURES.mkdir(parents=True, exist_ok=True)
     MODEL_REPORTS.mkdir(parents=True, exist_ok=True)
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
     x, y = load_data()
     write_data_profile(x, y)
     plot_class_balance(y)
@@ -1135,6 +1171,7 @@ def main() -> None:
     cost_summary.to_csv(REPORTS / "cost_threshold_analysis.csv", index=False)
     cost_curves.to_csv(REPORTS / "cost_threshold_curves.csv", index=False)
     curves[best.name].to_csv(REPORTS / "threshold_curve_best.csv", index=False)
+    save_inference_artifact(best_model, best, x_train.columns.tolist())
 
     plot_precision_recall(test_scores_by_model, y_test)
     plot_threshold_curve(curves[best.name], best.name)
