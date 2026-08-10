@@ -17,6 +17,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
 | System demo | Improved | FastAPI `/health`, `/model-info`, and `/predict` endpoints exist with sample input and smoke test. |
+| Result review dashboard | Improved | Static dashboard is generated at `reports/dashboard.html` from metrics and figures. |
 | Interview documents | Improved | Interview notes, semiconductor process notes, and one-page summary exist. |
 
 ## Phase 1 Completed
@@ -65,6 +66,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `src/make_sample_input.py` to create a reproducible JSON payload from SECOM rows.
 - Added `src/smoke_test_api.py` to verify the API without manually running a server.
 - Updated README with API run commands and endpoint descriptions.
+- Added `src/build_dashboard.py` and generated `reports/dashboard.html` for a compact result review page.
 
 ## Phase 6 Started
 
@@ -76,5 +78,5 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
-3. Phase 5 residual: add a lightweight dashboard only if it does not distract from the core FDC story.
-4. Phase 6 residual: tighten README screenshots and one-page summary after another full review.
+3. Phase 6 residual: tighten README screenshots and one-page summary after another full review.
+4. Final polish: review generated dashboard and README together for consistency.

@@ -26,6 +26,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from build_dashboard import build_dashboard
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -1185,6 +1187,7 @@ def main() -> None:
     plot_result_dashboard(metrics, best)
     write_model_comparison_report(metrics)
     write_summary(best, top_features, permutation_features, importance_comparison, cost_summary, metrics)
+    build_dashboard(ROOT)
     print(f"saved reports: {REPORTS}")
 
 

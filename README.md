@@ -23,7 +23,7 @@
 | Key Metric | Fail Recall / F2 / PR-AUC, not plain Accuracy |
 | Best Test Result | Fail Recall **0.7619**, Fail F2 **0.4819** |
 | Baseline Check | All-pass baseline reaches **0.9331 accuracy** but **0.0000 fail recall** |
-| Main Output | Data quality profile, model comparison, threshold artifacts, interpretability reports |
+| Main Output | Static dashboard, data quality profile, model comparison, threshold artifacts, interpretability reports |
 
 ![Result dashboard](reports/figures/result_dashboard.png)
 
@@ -276,6 +276,8 @@ python src/train.py
 
 `src/train.py` also creates a local inference artifact under `artifacts/`. The artifact is intentionally not committed because it can be regenerated from the raw data and training pipeline.
 
+Open `reports/dashboard.html` in a browser for a compact static review page generated from the latest reports.
+
 ### FastAPI Demo
 
 ```bash
@@ -301,6 +303,7 @@ curl -X POST http://127.0.0.1:8000/predict \
 Generated outputs:
 
 - `reports/metrics.csv`
+- `reports/dashboard.html`
 - `reports/model_comparison.md`
 - `reports/run_summary.md`
 - `reports/class_profile.csv`
@@ -342,6 +345,7 @@ Generated outputs:
 │   └── upgrade_checklist.md
 ├── src
 │   ├── api.py
+│   ├── build_dashboard.py
 │   ├── fetch_data.py
 │   ├── make_sample_input.py
 │   ├── smoke_test_api.py
@@ -350,6 +354,7 @@ Generated outputs:
     ├── class_profile.csv
     ├── cost_threshold_analysis.csv
     ├── cost_threshold_curves.csv
+    ├── dashboard.html
     ├── high_correlation_pairs.csv
     ├── importance_comparison.csv
     ├── metrics.csv
@@ -400,6 +405,7 @@ Generated outputs:
 | Manufacturing workflow | FDC-style sensor, scoring, alarm, engineer review, and feedback loop diagram |
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | System demo | FastAPI `/health`, `/model-info`, and `/predict` endpoints |
+| Result review | generated static dashboard at `reports/dashboard.html` |
 | Explanation docs | interview notes, semiconductor process notes, portfolio one-pager |
 | Reproducibility | raw data download script and generated reports |
 
@@ -410,4 +416,4 @@ Generated outputs:
 - Add optional SHAP-based local/global explanations
 - Add anomaly detection baseline such as Isolation Forest or AutoEncoder
 - Add process-tag mapping if a non-anonymized fab dataset is available
-- Add lightweight dashboard view only if it supports the FDC story without becoming a separate UI project
+- Tighten final README narrative after another end-to-end review
