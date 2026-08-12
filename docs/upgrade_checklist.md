@@ -12,7 +12,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Class imbalance explanation | Improved | Class profile, class imbalance figure, and all-pass baseline now show why accuracy is misleading. |
 | Data quality EDA | Improved | Missingness, zero-variance sensors, and high-correlation sensor pairs are now reported. |
 | Baseline comparison | Improved | `all_pass_baseline` is included in `reports/metrics.csv` and README results. |
-| Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, and all-pass baseline are compared. |
+| Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, pass-only IsolationForest, and all-pass baseline are compared. |
 | Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
 | Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
@@ -35,6 +35,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added weighted/unweighted Logistic Regression comparison.
 - Added weighted/unweighted RandomForest comparison.
 - Added `extra_trees_balanced` as an additional tree ensemble baseline.
+- Added `isolation_forest_pass_only` as a pass-only anomaly detection baseline.
 - Saved per-model artifacts under `reports/models/<model_name>/`.
 - Added `reports/model_comparison.md` for reviewer-friendly model comparison.
 - Updated README result table to reflect the new best model, `extra_trees_balanced`.
@@ -78,5 +79,5 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
-3. Phase 6 residual: tighten README screenshots and one-page summary after another full review.
+3. Optional anomaly residual: compare a lightweight AutoEncoder only if dependency and runtime stay stable.
 4. Final polish: review generated dashboard and README together for consistency.

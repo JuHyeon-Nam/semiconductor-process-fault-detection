@@ -15,7 +15,7 @@ UCI SECOM 센서 데이터를 이용한 FDC-style fail risk screening 프로젝�
 - Data quality EDA: missingness, zero-variance sensors, highly correlated sensors
 - Class imbalance report and all-pass baseline
 - Train/validation/test split with validation-only threshold selection
-- Model comparison: Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting
+- Model comparison: Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, IsolationForest
 - F2-based threshold optimization and final test evaluation
 - Cost-sensitive threshold analysis for false alarm vs missed fail trade-off
 - Built-in feature importance and validation permutation importance
@@ -53,6 +53,8 @@ The project demonstrates the full data problem-solving flow:
 4. Explain false alarm vs missed fail trade-offs.
 5. Translate model output into an FDC-style engineering review workflow.
 6. Provide a small API surface that can connect the model to a dashboard or manufacturing system.
+
+The pass-only IsolationForest baseline catches more fail cases but creates too many false alarms, which reinforces why threshold policy and review capacity matter in manufacturing use.
 
 ## Main Files
 

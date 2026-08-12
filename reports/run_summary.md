@@ -61,6 +61,7 @@ An all-pass rule reaches 0.9331 accuracy on the test split, but its fail recall 
 | extra_trees_balanced | 0.10 | 0.7739 | 0.7619 | 0.4819 | 0.2174 | 5 | 66 |
 | random_forest_unweighted | 0.10 | 0.8025 | 0.6667 | 0.4575 | 0.1701 | 7 | 55 |
 | random_forest_balanced | 0.08 | 0.7102 | 0.7619 | 0.4301 | 0.2150 | 5 | 86 |
+| isolation_forest_pass_only | 0.06 | 0.0955 | 0.9524 | 0.2584 | 0.1606 | 1 | 283 |
 | logistic_regression_unweighted | 0.06 | 0.8089 | 0.2381 | 0.1880 | 0.1220 | 16 | 44 |
 | logistic_regression_balanced | 0.62 | 0.8599 | 0.1905 | 0.1739 | 0.1219 | 17 | 27 |
 | hist_gradient_boosting | 0.02 | 0.9172 | 0.0952 | 0.1075 | 0.2137 | 19 | 7 |
@@ -99,16 +100,16 @@ Permutation importance is calculated on the validation split with average precis
 
 | feature | permutation_importance_mean | std |
 |---|---:|---:|
-| sensor_064 | 0.023783 | 0.012989 |
-| sensor_065 | 0.012147 | 0.009940 |
-| sensor_037 | 0.009050 | 0.002911 |
-| sensor_028 | 0.005910 | 0.006846 |
-| sensor_419 | 0.005766 | 0.003496 |
-| sensor_076 | 0.005675 | 0.002924 |
-| sensor_210 | 0.005547 | 0.003664 |
-| sensor_031 | 0.005149 | 0.002840 |
-| sensor_295 | 0.004913 | 0.001205 |
-| sensor_125 | 0.004687 | 0.004729 |
+| sensor_064 | 0.023800 | 0.012986 |
+| sensor_065 | 0.012164 | 0.009945 |
+| sensor_037 | 0.009062 | 0.002911 |
+| sensor_028 | 0.005932 | 0.006846 |
+| sensor_419 | 0.005787 | 0.003496 |
+| sensor_076 | 0.005696 | 0.002924 |
+| sensor_210 | 0.005569 | 0.003664 |
+| sensor_031 | 0.005171 | 0.002840 |
+| sensor_295 | 0.004931 | 0.001208 |
+| sensor_125 | 0.004709 | 0.004729 |
 
 ## Importance Comparison
 
@@ -116,16 +117,16 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 | feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |
 |---|---:|---:|---:|---:|
-| sensor_064 | 3 | 1 | 0.007861 | 0.023783 |
-| sensor_065 | 5 | 2 | 0.006011 | 0.012147 |
-| sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
-| sensor_419 | 29 | 5 | 0.003657 | 0.005766 |
-| sensor_125 | 27 | 10 | 0.003738 | 0.004687 |
-| sensor_499 | 24 | 13 | 0.003788 | 0.004310 |
-| sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
-| sensor_510 | 23 | 18 | 0.003809 | 0.003516 |
-| sensor_316 | 14 | 22 | 0.004293 | 0.003171 |
+| sensor_064 | 3 | 1 | 0.007861 | 0.023800 |
+| sensor_065 | 5 | 2 | 0.006011 | 0.012164 |
+| sensor_028 | 7 | 4 | 0.005651 | 0.005932 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005787 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004709 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004332 |
+| sensor_129 | 1 | 15 | 0.009227 | 0.003868 |
+| sensor_510 | 23 | 18 | 0.003809 | 0.003542 |
+| sensor_316 | 14 | 22 | 0.004293 | 0.003193 |
 
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 정상 샘플만 학습한 IsolationForest baseline을 비교해 라벨이 부족한 제조 환경에서의 anomaly screening 한계도 확인했습니다. false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.

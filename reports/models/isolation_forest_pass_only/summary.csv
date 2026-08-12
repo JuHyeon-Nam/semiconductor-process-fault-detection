@@ -1,0 +1,10 @@
+metric,value
+threshold,0.06
+accuracy,0.09554140127388536
+recall_fail,0.9523809523809523
+precision_fail,0.066006600660066
+f1_fail,0.12345679012345678
+f2_fail,0.25839793281653745
+pr_auc,0.1606160456332431
+false_alarm_count,283.0
+missed_fail_count,1.0

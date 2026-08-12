@@ -8,7 +8,7 @@ import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier, IsolationForest, RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -159,6 +159,26 @@ def build_models() -> dict[str, Pipeline]:
     }
 
 
+def build_anomaly_models() -> dict[str, Pipeline]:
+    return {
+        "isolation_forest_pass_only": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                ("scaler", StandardScaler()),
+                (
+                    "model",
+                    IsolationForest(
+                        n_estimators=500,
+                        contamination=0.07,
+                        random_state=42,
+                        n_jobs=-1,
+                    ),
+                ),
+            ]
+        )
+    }
+
+
 def model_notes() -> dict[str, str]:
     return {
         "all_pass_baseline": "Naive baseline that predicts every sample as pass.",
@@ -168,6 +188,7 @@ def model_notes() -> dict[str, str]:
         "random_forest_unweighted": "Tree ensemble without class weighting.",
         "extra_trees_balanced": "Randomized tree ensemble with class_weight=balanced.",
         "hist_gradient_boosting": "Histogram gradient boosting baseline.",
+        "isolation_forest_pass_only": "Unsupervised anomaly baseline trained only on pass samples.",
     }
 
 
@@ -179,6 +200,21 @@ def positive_scores(model: Pipeline, x: pd.DataFrame) -> np.ndarray:
         scores = model.decision_function(x)
         return (scores - scores.min()) / (scores.max() - scores.min() + 1e-9)
     return model.predict(x)
+
+
+def anomaly_scores_from_validation_scale(
+    model: Pipeline,
+    x_valid: pd.DataFrame,
+    x_test: pd.DataFrame,
+) -> tuple[np.ndarray, np.ndarray]:
+    valid_raw = -model.decision_function(x_valid)
+    test_raw = -model.decision_function(x_test)
+    valid_min = float(valid_raw.min())
+    valid_max = float(valid_raw.max())
+    denominator = valid_max - valid_min + 1e-9
+    valid_scores = (valid_raw - valid_min) / denominator
+    test_scores = (test_raw - valid_min) / denominator
+    return valid_scores, test_scores
 
 
 def threshold_curve(y_true: pd.Series, scores: np.ndarray) -> pd.DataFrame:
@@ -905,7 +941,7 @@ def write_model_comparison_report(metrics: pd.DataFrame) -> None:
 
 ## Purpose
 
-This report compares baseline and tree-based models for SECOM fail detection under the same train/validation/test split. Thresholds are selected on the validation set by F2 score, then evaluated once on the held-out test set.
+This report compares supervised baselines, tree-based models, an all-pass baseline, and a pass-only anomaly detection baseline for SECOM fail detection under the same train/validation/test split. Thresholds are selected on the validation set by F2 score, then evaluated once on the held-out test set.
 
 ## Result Table
 
@@ -916,6 +952,7 @@ This report compares baseline and tree-based models for SECOM fail detection und
 - Best F2 model: `{best["name"]}` with fail recall {best["recall_fail"]:.4f}, fail precision {best["precision_fail"]:.4f}, and F2 {best["f2_fail"]:.4f}.
 - The all-pass baseline reaches {all_pass["accuracy"]:.4f} accuracy, but it misses all {int(all_pass["missed_fail_count"])} fail cases.
 - Compared with `random_forest_balanced`, `extra_trees_balanced` keeps the same test fail recall while reducing false alarms from 86 to 66.
+- `isolation_forest_pass_only` is useful as a pass-only anomaly screening reference, but its false alarm count is too high for the selected operating model.
 - This is still a decision-support PoC, not a production-ready FDC model. The main value is the explicit metric, threshold, and trade-off analysis.
 
 ## Per-Model Artifacts
@@ -1079,7 +1116,7 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 ## Interview Message
 
-반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
+반도체 제조 데이터는 결측과 불균형이 큰 데이터라고 보고, 정상/불량 정확도보다 불량 미탐을 줄이는 Recall, F2, PR-AUC를 중심으로 평가했습니다. 임계값은 validation set에서 F2 기준으로 결정하고, test set에서 최종 성능을 확인했습니다. 추가로 정상 샘플만 학습한 IsolationForest baseline을 비교해 라벨이 부족한 제조 환경에서의 anomaly screening 한계도 확인했습니다. false alarm과 missed fail의 비용 가정을 바꿨을 때 threshold가 어떻게 달라지는지 분석해, 현장 의사결정 기준을 비용 관점으로 설명할 수 있게 했습니다. 주요 센서 후보는 built-in feature importance와 validation permutation importance를 함께 보며 FDC, 설비 이상탐지, 수율 개선 관점의 엔지니어 검토 후보로 해석했습니다.
 """
     (REPORTS / "run_summary.md").write_text(summary, encoding="utf-8")
 
@@ -1128,6 +1165,21 @@ def main() -> None:
         valid_scores = positive_scores(model, x_valid)
         threshold, curve = choose_threshold(y_valid, valid_scores)
         test_scores = positive_scores(model, x_test)
+        result = evaluate(name, threshold, y_test, test_scores)
+
+        write_model_artifacts(name, curve, result, y_test, test_scores)
+        rows.append({**result.__dict__, "note": model_notes()[name]})
+        models[name] = model
+        curves[name] = curve
+        test_scores_by_model[name] = test_scores
+        print(result)
+
+    x_train_pass = x_train.loc[y_train == 0]
+    for name, model in build_anomaly_models().items():
+        print(f"train: {name}")
+        model.fit(x_train_pass)
+        valid_scores, test_scores = anomaly_scores_from_validation_scale(model, x_valid, x_test)
+        threshold, curve = choose_threshold(y_valid, valid_scores)
         result = evaluate(name, threshold, y_test, test_scores)
 
         write_model_artifacts(name, curve, result, y_test, test_scores)

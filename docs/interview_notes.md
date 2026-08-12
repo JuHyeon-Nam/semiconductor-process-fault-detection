@@ -19,8 +19,9 @@
 3. train/validation/test split을 나누고, validation에서 threshold를 결정했습니다.
 4. test set은 최종 평가에만 사용해서 leakage를 피했습니다.
 5. Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, all-pass baseline을 비교했습니다.
-6. built-in feature importance와 permutation importance를 함께 보고 센서 후보를 정리했습니다.
-7. false alarm과 missed fail의 비용 가정을 바꿔가며 threshold가 어떻게 바뀌는지 분석했습니다.
+6. 정상 샘플만 학습한 IsolationForest anomaly baseline도 추가해, 라벨이 부족한 제조 현장에서의 이상탐지 접근을 비교했습니다.
+7. built-in feature importance와 permutation importance를 함께 보고 센서 후보를 정리했습니다.
+8. false alarm과 missed fail의 비용 가정을 바꿔가며 threshold가 어떻게 바뀌는지 분석했습니다.
 
 ## Best Current Result
 
@@ -36,6 +37,16 @@
 | False alarm | 66 |
 
 All-pass baseline은 test accuracy가 0.9331이지만 fail recall은 0.0000입니다. 그래서 accuracy가 아니라 불량 recall과 F2를 중심으로 봤습니다.
+
+## Anomaly Detection Baseline
+
+IsolationForest는 train split의 정상 샘플만 사용해서 정상 패턴을 학습했습니다. test에서는 fail recall이 0.9524로 높아서 21개 불량 중 20개를 잡았지만, false alarm이 283개로 매우 많았습니다.
+
+이 결과는 비지도 이상탐지가 초기 screening에는 의미가 있지만, 그대로 운영하면 엔지니어 review 부담이 커질 수 있다는 점을 보여줍니다. 그래서 현재 선택 모델은 IsolationForest가 아니라, recall과 false alarm 사이의 균형이 더 나은 ExtraTrees입니다.
+
+면접 답변 문장:
+
+"제조 현장에서는 불량 라벨이 적거나 늦게 붙는 경우가 많기 때문에 정상 데이터만 학습하는 anomaly detection baseline도 비교했습니다. IsolationForest는 불량을 거의 놓치지 않았지만 false alarm이 너무 많았습니다. 그래서 anomaly detection은 early screening 후보로 의미가 있지만, 실제 운영점은 review capacity와 missed fail 비용을 같이 보고 정해야 한다고 해석했습니다."
 
 ## Cost-Sensitive Threshold
 
@@ -111,4 +122,4 @@ FastAPI 데모는 모델을 크게 포장하기 위한 배포물이 아니라, �
 
 1. Permutation importance를 반복 실행해 중요 센서 안정성을 확인합니다.
 2. 실제 tag가 있는 데이터라면 공정 step, chamber, recipe, PM 이력과 연결해 해석력을 높입니다.
-3. 간단한 one-page summary와 semiconductor process notes를 추가해 프로젝트 설명 자료를 보강합니다.
+3. optional SHAP 또는 가벼운 AutoEncoder baseline은 의존성과 재현성이 안정적일 때만 추가합니다.

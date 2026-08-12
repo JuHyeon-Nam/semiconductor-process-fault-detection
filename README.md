@@ -37,7 +37,7 @@
 
 1. 공정 센서 데이터의 결측/불균형/저분산/중복 센서 구조를 먼저 확인한다.
 2. `all_pass_baseline`을 추가해 Accuracy가 왜 위험한지 수치로 확인한다.
-3. 모델을 여러 개 비교하되, Accuracy보다 불량 미탐을 줄이는 Recall/F2를 본다.
+3. supervised model과 pass-only anomaly baseline을 비교하되, Accuracy보다 불량 미탐을 줄이는 Recall/F2를 본다.
 4. 임계값은 test set이 아니라 validation set에서 먼저 결정한다.
 5. 최종 test set에서 성능을 확인한다.
 6. built-in importance와 permutation importance로 주요 센서 후보를 정리한다.
@@ -52,7 +52,7 @@
 |---|---|
 | Language | Python |
 | Data | pandas, NumPy |
-| ML | scikit-learn, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting |
+| ML | scikit-learn, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, IsolationForest |
 | Evaluation | Precision, Recall, F1, F2, PR-AUC, confusion matrix |
 | Visualization | matplotlib |
 | Serving | FastAPI, Uvicorn |
@@ -114,7 +114,7 @@ The EDA intentionally separates modeling from data-quality diagnosis:
 flowchart LR
     A["UCI SECOM raw data"] --> B["EDA<br/>imbalance + missingness + redundancy"]
     B --> C["Train / Validation / Test split"]
-    C --> D["Baselines + model training<br/>All-pass / LR / RF / ExtraTrees / HGB"]
+    C --> D["Baselines + model training<br/>All-pass / LR / RF / ExtraTrees / HGB / IsolationForest"]
     D --> E["Validation threshold search<br/>F2 priority"]
     E --> F["Final test evaluation"]
     F --> G["Sensor candidate ranking"]
@@ -149,6 +149,7 @@ Why not Accuracy?
 | ExtraTrees balanced | 0.10 | 0.7739 | **0.7619** | 0.1951 | **0.4819** | **0.2174** | **5** | 66 |
 | RandomForest unweighted | 0.10 | 0.8025 | 0.6667 | 0.2029 | 0.4575 | 0.1701 | 7 | 55 |
 | RandomForest balanced | 0.08 | 0.7102 | **0.7619** | 0.1569 | 0.4301 | 0.2150 | **5** | 86 |
+| IsolationForest pass-only | 0.06 | 0.0955 | 0.9524 | 0.0660 | 0.2584 | 0.1606 | 1 | 283 |
 | Logistic Regression unweighted | 0.06 | 0.8089 | 0.2381 | 0.1020 | 0.1880 | 0.1220 | 16 | 44 |
 | Logistic Regression balanced | 0.62 | 0.8599 | 0.1905 | 0.1290 | 0.1739 | 0.1219 | 17 | 27 |
 | HistGradientBoosting | 0.02 | 0.9172 | 0.0952 | 0.2222 | 0.1075 | 0.2137 | 19 | 7 |
@@ -165,6 +166,7 @@ Interpretation:
 
 - The selected threshold intentionally increases false alarms to reduce missed failures.
 - ExtraTrees kept the same test fail recall as the balanced RandomForest while reducing false alarms from 86 to 66.
+- IsolationForest trained only on pass samples catches 20 of 21 fail cases, but creates 283 false alarms. It is useful as an anomaly-screening reference, not as the selected operating model.
 - This is reasonable for an early-warning manufacturing use case where missed failures are more costly than extra inspection.
 - This model is not claimed as production-ready. The value is in the full problem-solving flow: imbalance recognition, threshold design, metric selection, and sensor candidate ranking.
 
@@ -399,6 +401,7 @@ Generated outputs:
 |---|---|
 | Data quality | imbalance, missingness, zero-variance sensors, correlated sensor pairs |
 | Model comparison | all-pass baseline, Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting |
+| Anomaly baseline | IsolationForest trained only on pass samples |
 | Metric design | Fail Recall, F2, PR-AUC, missed fail count, false alarm count |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
 | Decision policy | cost-sensitive threshold analysis with explicit false-alarm and missed-fail assumptions |
@@ -414,6 +417,6 @@ Generated outputs:
 ## Next Improvements
 
 - Add optional SHAP-based local/global explanations
-- Add anomaly detection baseline such as Isolation Forest or AutoEncoder
+- Compare a lightweight AutoEncoder anomaly baseline only if it stays reproducible
 - Add process-tag mapping if a non-anonymized fab dataset is available
 - Tighten final README narrative after another end-to-end review
