@@ -20,6 +20,7 @@ UCI SECOM 센서 데이터를 이용한 FDC-style fail risk screening 프로젝�
 - Cost-sensitive threshold analysis for false alarm vs missed fail trade-off
 - Built-in feature importance and validation permutation importance
 - FastAPI demo with `/health`, `/model-info`, and `/predict`
+- Validation script for generated reports, metrics, artifacts, and git data policy
 - Interview notes, process notes, and generated reports
 
 ## Best Current Result
@@ -63,5 +64,6 @@ The pass-only IsolationForest baseline catches more fail cases but creates too m
 - `src/api.py`: FastAPI inference service
 - `reports/run_summary.md`: generated analysis summary
 - `reports/model_comparison.md`: model comparison table
+- `reports/validation_summary.md`: generated consistency check summary
 - `docs/interview_notes.md`: interview-ready explanation
 - `docs/semiconductor_process_notes.md`: semiconductor process/data mapping notes

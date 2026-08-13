@@ -274,11 +274,14 @@ pip install -r requirements.txt
 
 python src/fetch_data.py
 python src/train.py
+python src/validate_outputs.py
 ```
 
 `src/train.py` also creates a local inference artifact under `artifacts/`. The artifact is intentionally not committed because it can be regenerated from the raw data and training pipeline.
 
 Open `reports/dashboard.html` in a browser for a compact static review page generated from the latest reports.
+
+`src/validate_outputs.py` checks the generated reports, model artifacts, dashboard, key metrics, and git tracking policy. It writes `reports/validation_summary.md`.
 
 ### FastAPI Demo
 
@@ -308,6 +311,7 @@ Generated outputs:
 - `reports/dashboard.html`
 - `reports/model_comparison.md`
 - `reports/run_summary.md`
+- `reports/validation_summary.md`
 - `reports/class_profile.csv`
 - `reports/missing_profile.csv`
 - `reports/sensor_quality_profile.csv`
@@ -351,6 +355,7 @@ Generated outputs:
 │   ├── fetch_data.py
 │   ├── make_sample_input.py
 │   ├── smoke_test_api.py
+│   ├── validate_outputs.py
 │   └── train.py
 └── reports
     ├── class_profile.csv
@@ -371,6 +376,7 @@ Generated outputs:
     │       ├── threshold_tradeoff.png
     │       └── validation_threshold_curve.csv
     ├── run_summary.md
+    ├── validation_summary.md
     ├── permutation_importance.csv
     ├── sensor_quality_profile.csv
     ├── split_class_profile.csv
@@ -410,7 +416,7 @@ Generated outputs:
 | System demo | FastAPI `/health`, `/model-info`, and `/predict` endpoints |
 | Result review | generated static dashboard at `reports/dashboard.html` |
 | Explanation docs | interview notes, semiconductor process notes, portfolio one-pager |
-| Reproducibility | raw data download script and generated reports |
+| Reproducibility | raw data download script, generated reports, validation script |
 
 ---
 

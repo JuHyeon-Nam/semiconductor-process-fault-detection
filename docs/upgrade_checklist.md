@@ -7,6 +7,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Area | Status | Notes |
 |---|---|---|
 | Raw data reproducibility | Done | Raw SECOM files are downloaded through `src/fetch_data.py` and ignored by git. |
+| Output validation | Improved | `src/validate_outputs.py` checks reports, metrics, artifacts, dashboard, and git tracking policy. |
 | Split hygiene | Done | Train/validation/test splits are stratified and saved to `reports/split_class_profile.csv`. |
 | Leakage control | Done | Threshold selection is performed on validation scores; test is used for final evaluation only. |
 | Class imbalance explanation | Improved | Class profile, class imbalance figure, and all-pass baseline now show why accuracy is misleading. |
@@ -75,9 +76,15 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `docs/portfolio_onepager.md` as a compact project summary.
 - Updated README so these explanation documents are visible from the main page.
 
+## Final Validation Started
+
+- Added `src/validate_outputs.py` to check required generated files, key metric consistency, per-model artifacts, dashboard content, inference artifact metadata, and git raw-data policy.
+- Added `reports/validation_summary.md` as a generated audit trail.
+- Updated README with the validation command.
+
 ## Next Implementation Queue
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
 3. Optional anomaly residual: compare a lightweight AutoEncoder only if dependency and runtime stay stable.
-4. Final polish: review generated dashboard and README together for consistency.
+4. Final polish: review generated dashboard, validation summary, and README together for consistency.
