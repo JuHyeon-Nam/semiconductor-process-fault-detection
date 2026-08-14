@@ -41,7 +41,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `reports/model_comparison.md` for reviewer-friendly model comparison.
 - Updated README result table to reflect the new best model, `extra_trees_balanced`.
 
-## Phase 3 Started
+## Phase 3 Completed
 
 - Added validation-set permutation importance with average precision scoring.
 - Added `reports/permutation_importance.csv`.
@@ -51,7 +51,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Updated README and run summary to explain built-in importance vs permutation importance.
 - Added `docs/interview_notes.md` with a simple project explanation and sensor-anonymization interview answer.
 
-## Phase 4 Started
+## Phase 4 Completed
 
 - Added cost-sensitive threshold scenarios with assumed false alarm and missed fail costs.
 - Added `reports/cost_threshold_analysis.csv`.
@@ -61,7 +61,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `reports/figures/fdc_operating_workflow.png` to connect sensor data, model scoring, alarm review, PM/recipe checks, and feedback.
 - Updated README and interview notes to frame the model as FDC-style manufacturing decision support rather than automatic final judgment.
 
-## Phase 5 Started
+## Phase 5 Completed
 
 - Added trained model artifact generation in `src/train.py`.
 - Added `src/api.py` with FastAPI `/health`, `/model-info`, and `/predict` endpoints.
@@ -70,19 +70,20 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Updated README with API run commands and endpoint descriptions.
 - Added `src/build_dashboard.py` and generated `reports/dashboard.html` for a compact result review page.
 
-## Phase 6 Started
+## Phase 6 Completed
 
 - Added `docs/semiconductor_process_notes.md` to connect Photo, Etch, Diffusion, Thin Film, and CMP/Cleaning to manufacturing data analysis.
 - Added `docs/portfolio_onepager.md` as a compact project summary.
+- Added `docs/final_review.md` for final readiness, limitations, and interview framing.
 - Updated README so these explanation documents are visible from the main page.
 
-## Final Validation Started
+## Final Validation Completed
 
 - Added `src/validate_outputs.py` to check required generated files, key metric consistency, per-model artifacts, dashboard content, inference artifact metadata, and git raw-data policy.
 - Added `reports/validation_summary.md` as a generated audit trail.
 - Updated README with the validation command.
 
-## Next Implementation Queue
+## Remaining Optional Work
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.

@@ -65,5 +65,6 @@ The pass-only IsolationForest baseline catches more fail cases but creates too m
 - `reports/run_summary.md`: generated analysis summary
 - `reports/model_comparison.md`: model comparison table
 - `reports/validation_summary.md`: generated consistency check summary
+- `docs/final_review.md`: final readiness and interview framing
 - `docs/interview_notes.md`: interview-ready explanation
 - `docs/semiconductor_process_notes.md`: semiconductor process/data mapping notes
