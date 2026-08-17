@@ -12,6 +12,7 @@ UCI SECOM 센서 데이터를 이용한 FDC-style fail risk screening 프로젝�
 ## What Was Built
 
 - Raw data download script for reproducibility
+- Makefile command for one-step reproduction
 - Data quality EDA: missingness, zero-variance sensors, highly correlated sensors
 - Class imbalance report and all-pass baseline
 - Train/validation/test split with validation-only threshold selection
@@ -60,11 +61,14 @@ The pass-only IsolationForest baseline catches more fail cases but creates too m
 ## Main Files
 
 - `README.md`: project overview, results, workflow, run instructions
+- `Makefile`: one-step reproduce, validate, and API smoke-test commands
 - `src/train.py`: EDA, model training, threshold selection, reports, inference artifact
 - `src/api.py`: FastAPI inference service
 - `reports/run_summary.md`: generated analysis summary
 - `reports/model_comparison.md`: model comparison table
 - `reports/validation_summary.md`: generated consistency check summary
+- `docs/submission_guide.md`: recommended review order and submission notes
+- `docs/interview_qa.md`: tough question practice
 - `docs/final_review.md`: final readiness and interview framing
 - `docs/interview_notes.md`: interview-ready explanation
 - `docs/semiconductor_process_notes.md`: semiconductor process/data mapping notes

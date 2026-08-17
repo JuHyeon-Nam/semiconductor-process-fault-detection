@@ -7,7 +7,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Area | Status | Notes |
 |---|---|---|
 | Raw data reproducibility | Done | Raw SECOM files are downloaded through `src/fetch_data.py` and ignored by git. |
-| Output validation | Improved | `src/validate_outputs.py` checks reports, metrics, artifacts, dashboard, and git tracking policy. |
+| Output validation | Improved | `src/validate_outputs.py` checks reports, metrics, artifacts, dashboard, docs, and git tracking policy. |
 | Split hygiene | Done | Train/validation/test splits are stratified and saved to `reports/split_class_profile.csv`. |
 | Leakage control | Done | Threshold selection is performed on validation scores; test is used for final evaluation only. |
 | Class imbalance explanation | Improved | Class profile, class imbalance figure, and all-pass baseline now show why accuracy is misleading. |
@@ -19,7 +19,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
 | System demo | Improved | FastAPI `/health`, `/model-info`, and `/predict` endpoints exist with sample input and smoke test. |
 | Result review dashboard | Improved | Static dashboard is generated at `reports/dashboard.html` from metrics and figures. |
-| Interview documents | Improved | Interview notes, semiconductor process notes, and one-page summary exist. |
+| Interview documents | Improved | Interview notes, interview Q&A, semiconductor process notes, submission guide, final review, and one-page summary exist. |
 
 ## Phase 1 Completed
 
@@ -82,10 +82,13 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `src/validate_outputs.py` to check required generated files, key metric consistency, per-model artifacts, dashboard content, inference artifact metadata, and git raw-data policy.
 - Added `reports/validation_summary.md` as a generated audit trail.
 - Updated README with the validation command.
+- Added `Makefile` with `make reproduce`, `make validate`, and `make api-smoke`.
+- Added `docs/submission_guide.md` and `docs/interview_qa.md`.
+- Extended validation to check the final documentation set.
 
 ## Remaining Optional Work
 
 1. Phase 2 residual: consider optional XGBoost/LightGBM only if dependency setup stays lightweight.
 2. Phase 3 residual: consider optional SHAP only if dependency setup stays lightweight and stable.
 3. Optional anomaly residual: compare a lightweight AutoEncoder only if dependency and runtime stay stable.
-4. Final polish: review generated dashboard, validation summary, and README together for consistency.
+4. Final polish: review generated dashboard, validation summary, README, and interview Q&A together for consistency.

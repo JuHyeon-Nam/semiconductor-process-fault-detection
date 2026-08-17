@@ -53,6 +53,14 @@ def tracked_files(pathspec: str) -> list[str]:
 
 def validate_required_files(checks: list[Check]) -> None:
     required = [
+        ROOT / "Makefile",
+        ROOT / "README.md",
+        ROOT / "docs" / "final_review.md",
+        ROOT / "docs" / "interview_notes.md",
+        ROOT / "docs" / "interview_qa.md",
+        ROOT / "docs" / "portfolio_onepager.md",
+        ROOT / "docs" / "semiconductor_process_notes.md",
+        ROOT / "docs" / "submission_guide.md",
         REPORTS / "metrics.csv",
         REPORTS / "model_comparison.md",
         REPORTS / "run_summary.md",

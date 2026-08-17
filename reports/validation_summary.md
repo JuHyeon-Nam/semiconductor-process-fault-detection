@@ -1,10 +1,18 @@
 # Validation Summary
 
-- Checks passed: 75
+- Checks passed: 83
 - Checks failed: 0
 
 | Check | Status | Detail |
 |---|---|---|
+| file: Makefile | PASS | exists and is non-empty |
+| file: README.md | PASS | exists and is non-empty |
+| file: docs/final_review.md | PASS | exists and is non-empty |
+| file: docs/interview_notes.md | PASS | exists and is non-empty |
+| file: docs/interview_qa.md | PASS | exists and is non-empty |
+| file: docs/portfolio_onepager.md | PASS | exists and is non-empty |
+| file: docs/semiconductor_process_notes.md | PASS | exists and is non-empty |
+| file: docs/submission_guide.md | PASS | exists and is non-empty |
 | file: reports/metrics.csv | PASS | exists and is non-empty |
 | file: reports/model_comparison.md | PASS | exists and is non-empty |
 | file: reports/run_summary.md | PASS | exists and is non-empty |
