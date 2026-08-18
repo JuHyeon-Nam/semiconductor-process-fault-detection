@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,8 @@ FIGURES = REPORTS / "figures"
 MODELS = REPORTS / "models"
 ARTIFACTS = ROOT / "artifacts"
 SUMMARY_PATH = REPORTS / "validation_summary.md"
+MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+EXTERNAL_LINK_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
 @dataclass
@@ -236,6 +239,61 @@ def validate_inference_artifact(checks: list[Check], metrics: pd.DataFrame) -> N
     )
 
 
+def markdown_files_to_validate() -> list[Path]:
+    return [
+        ROOT / "README.md",
+        *sorted((ROOT / "docs").glob("*.md")),
+        REPORTS / "model_comparison.md",
+        REPORTS / "run_summary.md",
+    ]
+
+
+def normalize_markdown_target(raw_target: str) -> str:
+    target = raw_target.strip()
+    if target.startswith("<") and ">" in target:
+        target = target[1 : target.index(">")]
+    elif " " in target:
+        target = target.split()[0]
+    return target.split("#", 1)[0].split("?", 1)[0]
+
+
+def validate_markdown_links(checks: list[Check]) -> None:
+    for markdown_path in markdown_files_to_validate():
+        if not markdown_path.exists():
+            add_check(
+                checks,
+                f"markdown links: {markdown_path.relative_to(ROOT)}",
+                False,
+                "markdown file missing",
+            )
+            continue
+
+        text = markdown_path.read_text(encoding="utf-8")
+        local_targets: list[str] = []
+        missing_targets: list[str] = []
+        for match in MARKDOWN_LINK_RE.finditer(text):
+            target = normalize_markdown_target(match.group(1))
+            if not target or target.startswith("#") or EXTERNAL_LINK_RE.match(target):
+                continue
+
+            local_targets.append(target)
+            resolved = (markdown_path.parent / target).resolve()
+            if not resolved.exists():
+                line_number = text.count("\n", 0, match.start()) + 1
+                missing_targets.append(f"{target} (line {line_number})")
+
+        add_check(
+            checks,
+            f"markdown links: {markdown_path.relative_to(ROOT)}",
+            not missing_targets,
+            (
+                f"checked={len(local_targets)}"
+                if not missing_targets
+                else "missing=" + "; ".join(missing_targets[:5])
+            ),
+        )
+
+
 def validate_git_policy(checks: list[Check]) -> None:
     raw_files = tracked_files("data/raw")
     artifact_files = tracked_files("artifacts")
@@ -281,6 +339,7 @@ def main() -> None:
     validate_data_profiles(checks)
     validate_cost_and_dashboard(checks)
     validate_inference_artifact(checks, metrics)
+    validate_markdown_links(checks)
     validate_git_policy(checks)
 
     if not args.no_write_summary:

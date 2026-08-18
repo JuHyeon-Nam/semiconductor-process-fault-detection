@@ -289,7 +289,7 @@ python src/validate_outputs.py
 
 Open `reports/dashboard.html` in a browser for a compact static review page generated from the latest reports.
 
-`src/validate_outputs.py` checks the generated reports, model artifacts, dashboard, key metrics, and git tracking policy. It writes `reports/validation_summary.md`.
+`src/validate_outputs.py` checks the generated reports, model artifacts, dashboard, key metrics, Markdown links, and git tracking policy. It writes `reports/validation_summary.md`.
 
 ### FastAPI Demo
 

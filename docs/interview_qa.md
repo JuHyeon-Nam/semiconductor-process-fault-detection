@@ -74,7 +74,7 @@ SECOM은 센서명이 익명화되어 있고 데이터 규모도 크지 않습�
 
 ## 19. 재현성은 어떻게 확인하나?
 
-`make reproduce`를 실행하면 의존성 설치, 데이터 다운로드, 학습/리포트 생성, output validation, API smoke test를 순서대로 실행합니다. `src/validate_outputs.py`는 83개 체크로 산출물과 git policy를 확인합니다.
+`make reproduce`를 실행하면 의존성 설치, 데이터 다운로드, 학습/리포트 생성, output validation, API smoke test를 순서대로 실행합니다. `src/validate_outputs.py`는 산출물, 핵심 metric, 문서 링크, git policy를 함께 확인합니다.
 
 ## 20. 왜 이게 단순 예제보다 낫다고 볼 수 있나?
 

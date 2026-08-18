@@ -1,6 +1,6 @@
 # Validation Summary
 
-- Checks passed: 83
+- Checks passed: 93
 - Checks failed: 0
 
 | Check | Status | Detail |
@@ -86,5 +86,15 @@
 | artifact: model name matches metrics | PASS | artifact=extra_trees_balanced, metrics=extra_trees_balanced |
 | artifact: threshold matches metrics | PASS | artifact=0.1000, metrics=0.1000 |
 | artifact: feature schema | PASS | feature_count=590 |
+| markdown links: README.md | PASS | checked=14 |
+| markdown links: docs/final_review.md | PASS | checked=0 |
+| markdown links: docs/interview_notes.md | PASS | checked=0 |
+| markdown links: docs/interview_qa.md | PASS | checked=0 |
+| markdown links: docs/portfolio_onepager.md | PASS | checked=0 |
+| markdown links: docs/semiconductor_process_notes.md | PASS | checked=0 |
+| markdown links: docs/submission_guide.md | PASS | checked=0 |
+| markdown links: docs/upgrade_checklist.md | PASS | checked=0 |
+| markdown links: reports/model_comparison.md | PASS | checked=0 |
+| markdown links: reports/run_summary.md | PASS | checked=0 |
 | git policy: raw data not tracked | PASS | tracked_raw_files=0 |
 | git policy: local model artifacts not tracked | PASS | tracked_artifact_files=0 |

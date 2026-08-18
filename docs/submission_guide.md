@@ -36,7 +36,7 @@ python src/smoke_test_api.py
 
 Expected validation result:
 
-- `83 checks passed`
+- all validation checks passed
 - `0 checks failed`
 - best model: `extra_trees_balanced`
 - threshold: `0.10`

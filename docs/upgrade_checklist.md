@@ -7,7 +7,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Area | Status | Notes |
 |---|---|---|
 | Raw data reproducibility | Done | Raw SECOM files are downloaded through `src/fetch_data.py` and ignored by git. |
-| Output validation | Improved | `src/validate_outputs.py` checks reports, metrics, artifacts, dashboard, docs, and git tracking policy. |
+| Output validation | Improved | `src/validate_outputs.py` checks reports, metrics, artifacts, dashboard, Markdown links, and git tracking policy. |
 | Split hygiene | Done | Train/validation/test splits are stratified and saved to `reports/split_class_profile.csv`. |
 | Leakage control | Done | Threshold selection is performed on validation scores; test is used for final evaluation only. |
 | Class imbalance explanation | Improved | Class profile, class imbalance figure, and all-pass baseline now show why accuracy is misleading. |
@@ -79,7 +79,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 
 ## Final Validation Completed
 
-- Added `src/validate_outputs.py` to check required generated files, key metric consistency, per-model artifacts, dashboard content, inference artifact metadata, and git raw-data policy.
+- Added `src/validate_outputs.py` to check required generated files, key metric consistency, per-model artifacts, dashboard content, inference artifact metadata, Markdown links, and git raw-data policy.
 - Added `reports/validation_summary.md` as a generated audit trail.
 - Updated README with the validation command.
 - Added `Makefile` with `make reproduce`, `make validate`, and `make api-smoke`.
