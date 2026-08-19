@@ -1,6 +1,6 @@
 # Validation Summary
 
-- Checks passed: 93
+- Checks passed: 95
 - Checks failed: 0
 
 | Check | Status | Detail |
@@ -14,6 +14,7 @@
 | file: docs/semiconductor_process_notes.md | PASS | exists and is non-empty |
 | file: docs/submission_guide.md | PASS | exists and is non-empty |
 | file: reports/metrics.csv | PASS | exists and is non-empty |
+| file: reports/model_card.md | PASS | exists and is non-empty |
 | file: reports/model_comparison.md | PASS | exists and is non-empty |
 | file: reports/run_summary.md | PASS | exists and is non-empty |
 | file: reports/dashboard.html | PASS | exists and is non-empty |
@@ -94,6 +95,7 @@
 | markdown links: docs/semiconductor_process_notes.md | PASS | checked=0 |
 | markdown links: docs/submission_guide.md | PASS | checked=0 |
 | markdown links: docs/upgrade_checklist.md | PASS | checked=0 |
+| markdown links: reports/model_card.md | PASS | checked=0 |
 | markdown links: reports/model_comparison.md | PASS | checked=0 |
 | markdown links: reports/run_summary.md | PASS | checked=0 |
 | git policy: raw data not tracked | PASS | tracked_raw_files=0 |

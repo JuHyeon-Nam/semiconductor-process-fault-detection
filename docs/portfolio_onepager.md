@@ -64,6 +64,7 @@ The pass-only IsolationForest baseline catches more fail cases but creates too m
 - `Makefile`: one-step reproduce, validate, and API smoke-test commands
 - `src/train.py`: EDA, model training, threshold selection, reports, inference artifact
 - `src/api.py`: FastAPI inference service
+- `reports/model_card.md`: intended use, limitations, monitoring, and operating policy
 - `reports/run_summary.md`: generated analysis summary
 - `reports/model_comparison.md`: model comparison table
 - `reports/validation_summary.md`: generated consistency check summary

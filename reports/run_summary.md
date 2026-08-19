@@ -100,16 +100,16 @@ Permutation importance is calculated on the validation split with average precis
 
 | feature | permutation_importance_mean | std |
 |---|---:|---:|
-| sensor_064 | 0.023778 | 0.012986 |
-| sensor_065 | 0.012147 | 0.009940 |
-| sensor_037 | 0.009041 | 0.002906 |
-| sensor_028 | 0.005910 | 0.006846 |
-| sensor_419 | 0.005766 | 0.003496 |
-| sensor_076 | 0.005675 | 0.002924 |
-| sensor_210 | 0.005547 | 0.003664 |
-| sensor_031 | 0.005149 | 0.002840 |
-| sensor_295 | 0.004909 | 0.001201 |
-| sensor_125 | 0.004687 | 0.004729 |
+| sensor_064 | 0.023800 | 0.012986 |
+| sensor_065 | 0.012168 | 0.009940 |
+| sensor_037 | 0.009071 | 0.002911 |
+| sensor_028 | 0.005932 | 0.006846 |
+| sensor_419 | 0.005792 | 0.003499 |
+| sensor_076 | 0.005696 | 0.002924 |
+| sensor_210 | 0.005565 | 0.003662 |
+| sensor_031 | 0.005171 | 0.002840 |
+| sensor_295 | 0.004931 | 0.001201 |
+| sensor_125 | 0.004709 | 0.004729 |
 
 ## Importance Comparison
 
@@ -117,15 +117,15 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 | feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |
 |---|---:|---:|---:|---:|
-| sensor_064 | 3 | 1 | 0.007861 | 0.023778 |
-| sensor_065 | 5 | 2 | 0.006011 | 0.012147 |
-| sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
-| sensor_419 | 29 | 5 | 0.003657 | 0.005766 |
-| sensor_125 | 27 | 10 | 0.003738 | 0.004687 |
-| sensor_499 | 24 | 13 | 0.003788 | 0.004306 |
-| sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
-| sensor_510 | 23 | 18 | 0.003809 | 0.003521 |
-| sensor_316 | 14 | 22 | 0.004293 | 0.003171 |
+| sensor_064 | 3 | 1 | 0.007861 | 0.023800 |
+| sensor_065 | 5 | 2 | 0.006011 | 0.012168 |
+| sensor_028 | 7 | 4 | 0.005651 | 0.005932 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005792 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004709 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004327 |
+| sensor_129 | 1 | 15 | 0.009227 | 0.003868 |
+| sensor_510 | 23 | 18 | 0.003809 | 0.003542 |
+| sensor_316 | 14 | 22 | 0.004293 | 0.003193 |
 
 ## Interview Message
 

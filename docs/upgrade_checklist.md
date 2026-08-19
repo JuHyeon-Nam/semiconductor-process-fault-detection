@@ -19,6 +19,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
 | System demo | Improved | FastAPI `/health`, `/model-info`, and `/predict` endpoints exist with sample input and smoke test. |
 | Result review dashboard | Improved | Static dashboard is generated at `reports/dashboard.html` from metrics and figures. |
+| Model card | Improved | Generated `reports/model_card.md` captures intended use, risks, and monitoring needs. |
 | Interview documents | Improved | Interview notes, interview Q&A, semiconductor process notes, submission guide, final review, and one-page summary exist. |
 
 ## Phase 1 Completed
@@ -69,6 +70,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `src/smoke_test_api.py` to verify the API without manually running a server.
 - Updated README with API run commands and endpoint descriptions.
 - Added `src/build_dashboard.py` and generated `reports/dashboard.html` for a compact result review page.
+- Added generated `reports/model_card.md` for intended use, non-goals, operating risks, and monitoring conditions.
 
 ## Phase 6 Completed
 

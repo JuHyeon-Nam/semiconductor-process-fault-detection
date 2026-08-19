@@ -7,11 +7,12 @@ Start with `README.md`. It gives the project context, the reason accuracy is mis
 Then show these files in order:
 
 1. `reports/dashboard.html`
-2. `reports/model_comparison.md`
-3. `reports/run_summary.md`
-4. `docs/final_review.md`
-5. `docs/interview_notes.md`
-6. `docs/portfolio_onepager.md`
+2. `reports/model_card.md`
+3. `reports/model_comparison.md`
+4. `reports/run_summary.md`
+5. `docs/final_review.md`
+6. `docs/interview_notes.md`
+7. `docs/portfolio_onepager.md`
 
 This order moves from high-level result review to detailed technical explanation.
 
@@ -70,6 +71,7 @@ Expected validation result:
 |---|---|
 | `README.md` | Main project story and results |
 | `reports/dashboard.html` | One-screen review of metrics, trade-offs, and workflow |
+| `reports/model_card.md` | Intended use, metrics, risks, and operating conditions |
 | `reports/validation_summary.md` | Evidence that generated outputs are consistent |
 | `src/train.py` | Main EDA/model/report pipeline |
 | `src/api.py` | Inference endpoint |

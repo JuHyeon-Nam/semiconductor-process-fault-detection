@@ -969,6 +969,101 @@ Each trained model has these generated files under `reports/models/<model_name>/
     (REPORTS / "model_comparison.md").write_text(report, encoding="utf-8")
 
 
+def write_model_card(best: Evaluation, metrics: pd.DataFrame, cost_summary: pd.DataFrame) -> None:
+    class_profile = pd.read_csv(REPORTS / "class_profile.csv")
+    split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
+    sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
+
+    total_samples = int(class_profile["count"].sum())
+    fail_count = int(class_profile.loc[class_profile["class"] == "fail", "count"].iloc[0])
+    fail_ratio = fail_count / total_samples
+    zero_variance = int(sensor_quality["is_zero_variance"].sum())
+    high_missing = int((sensor_quality["missing_ratio"] >= 0.50).sum())
+    all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
+    anomaly = metrics.loc[metrics["name"] == "isolation_forest_pass_only"].iloc[0]
+    yield_row = cost_summary.loc[cost_summary["scenario"] == "yield_risk_sensitive"].iloc[0]
+
+    split_lines = ["| split | samples | fail count | fail ratio |", "|---|---:|---:|---:|"]
+    for row in split_profile.itertuples(index=False):
+        split_lines.append(f"| {row.split} | {row.total} | {row.fail_count} | {row.fail_ratio:.4f} |")
+
+    model_card = f"""# Model Card
+
+## Model Summary
+
+| Item | Value |
+|---|---|
+| Selected model | `{best.name}` |
+| Positive class | `fail` |
+| Score | estimated fail-risk score |
+| Operating threshold | {best.threshold:.2f}, selected on validation data by F2 |
+| Intended decision | route high-risk samples to engineering review |
+| Not intended for | automated recipe control, physical root-cause confirmation, or production release without fab validation |
+
+## Intended Use
+
+This model is a manufacturing decision-support PoC for SECOM semiconductor sensor data. It is designed to demonstrate an FDC-style workflow: sensor snapshot, fail-risk scoring, alarm decision, engineer review, and feedback into maintenance or process investigation.
+
+The useful output is not a final verdict on wafer quality. The useful output is a ranked review signal that helps prioritize samples where missed-fail risk may be more expensive than review effort.
+
+## Data
+
+| Item | Value |
+|---|---:|
+| Samples | {total_samples} |
+| Sensors | 590 |
+| Fail samples | {fail_count} |
+| Fail ratio | {fail_ratio:.4f} |
+| Zero-variance sensors | {zero_variance} |
+| Sensors with >=50% missing values | {high_missing} |
+
+## Split
+
+{chr(10).join(split_lines)}
+
+Train and validation data are used for model fitting and threshold selection. The test split is used only for final evaluation.
+
+## Main Test Metrics
+
+| Metric | Value |
+|---|---:|
+| Fail recall | {best.recall_fail:.4f} |
+| Fail precision | {best.precision_fail:.4f} |
+| Fail F2 | {best.f2_fail:.4f} |
+| PR-AUC | {best.pr_auc:.4f} |
+| Accuracy | {best.accuracy:.4f} |
+| Missed fail count | {best.missed_fail_count} |
+| False alarm count | {best.false_alarm_count} |
+
+## Why Accuracy Is Not The Main Metric
+
+The all-pass baseline reaches {all_pass.accuracy:.4f} accuracy but has {all_pass.recall_fail:.4f} fail recall. In this dataset, a high accuracy score can still mean the model misses every fail sample. That is why this project uses fail recall, F2, PR-AUC, missed fail count, and false alarm count.
+
+## Operating Trade-Off
+
+At the selected F2 threshold of {best.threshold:.2f}, the model catches {best.confusion[1][1]} fail samples and misses {best.missed_fail_count}. A more yield-risk-sensitive cost assumption selects threshold {yield_row.selected_threshold_from_validation:.2f}, reducing missed fails to {int(yield_row.test_missed_fail_count)} but increasing false alarms to {int(yield_row.test_false_alarm_count)}.
+
+The pass-only IsolationForest baseline reaches {anomaly.recall_fail:.4f} fail recall, but creates {int(anomaly.false_alarm_count)} false alarms. It is useful as an anomaly-screening reference, not as the selected operating model.
+
+## Interpretation Policy
+
+Sensor names are anonymized, so important features are not treated as confirmed physical root causes. Built-in feature importance and permutation importance are used as sensor-candidate prioritization signals for engineering review.
+
+## Operational Risks
+
+- Dataset size is small and fail samples are rare.
+- Sensor identity is anonymized, limiting physical process interpretation.
+- False alarms can overload review capacity if threshold is set too low.
+- Missed fails can be more costly than review effort in yield-risk-sensitive settings.
+- Any production use would need tool/process-specific validation, drift monitoring, and periodic threshold review.
+
+## Monitoring Before Production Use
+
+Track fail-rate drift, missingness drift, score distribution drift, false alarm review rate, confirmed missed-fail events, and threshold stability. Refit or recalibrate only after checking whether process conditions, maintenance events, or sensor collection logic changed.
+"""
+    (REPORTS / "model_card.md").write_text(model_card, encoding="utf-8")
+
+
 def write_summary(
     best: Evaluation,
     top_features: pd.DataFrame,
@@ -1238,6 +1333,7 @@ def main() -> None:
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)
     write_model_comparison_report(metrics)
+    write_model_card(best, metrics, cost_summary)
     write_summary(best, top_features, permutation_features, importance_comparison, cost_summary, metrics)
     build_dashboard(ROOT)
     print(f"saved reports: {REPORTS}")

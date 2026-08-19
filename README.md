@@ -317,6 +317,7 @@ Generated outputs:
 
 - `reports/metrics.csv`
 - `reports/dashboard.html`
+- `reports/model_card.md`
 - `reports/model_comparison.md`
 - `reports/run_summary.md`
 - `reports/validation_summary.md`
@@ -380,6 +381,7 @@ Generated outputs:
     ├── high_correlation_pairs.csv
     ├── importance_comparison.csv
     ├── metrics.csv
+    ├── model_card.md
     ├── model_comparison.md
     ├── missing_profile.csv
     ├── models
@@ -430,6 +432,7 @@ Generated outputs:
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | System demo | FastAPI `/health`, `/model-info`, and `/predict` endpoints |
 | Result review | generated static dashboard at `reports/dashboard.html` |
+| Model governance | generated model card at `reports/model_card.md` |
 | Explanation docs | submission guide, final review, interview Q&A, process notes, one-pager |
 | Reproducibility | Makefile, raw data download script, generated reports, validation script |
 

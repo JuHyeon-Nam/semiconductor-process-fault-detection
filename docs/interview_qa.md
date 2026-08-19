@@ -70,7 +70,7 @@ SECOM은 센서명이 익명화되어 있고 데이터 규모도 크지 않습�
 
 ## 18. 가장 먼저 보여줄 산출물은?
 
-`README.md`와 `reports/dashboard.html`입니다. README는 프로젝트의 전체 논리를 보여주고, dashboard는 metric, threshold, cost, workflow, sensor candidate를 한 화면에서 보여줍니다.
+`README.md`, `reports/dashboard.html`, `reports/model_card.md`입니다. README는 프로젝트의 전체 논리를 보여주고, dashboard는 metric, threshold, cost, workflow, sensor candidate를 한 화면에서 보여줍니다. model card는 intended use, 한계, 운영 리스크, monitoring 조건을 정리합니다.
 
 ## 19. 재현성은 어떻게 확인하나?
 
@@ -78,4 +78,4 @@ SECOM은 센서명이 익명화되어 있고 데이터 규모도 크지 않습�
 
 ## 20. 왜 이게 단순 예제보다 낫다고 볼 수 있나?
 
-단순히 모델 성능표만 만든 것이 아니라, all-pass baseline, class imbalance, validation thresholding, cost-sensitive threshold, anomaly baseline, sensor interpretation, FDC workflow, FastAPI, dashboard, validation checks까지 하나의 제조 데이터 문제 해결 흐름으로 연결했기 때문입니다.
+단순히 모델 성능표만 만든 것이 아니라, all-pass baseline, class imbalance, validation thresholding, cost-sensitive threshold, anomaly baseline, sensor interpretation, FDC workflow, model card, FastAPI, dashboard, validation checks까지 하나의 제조 데이터 문제 해결 흐름으로 연결했기 때문입니다.

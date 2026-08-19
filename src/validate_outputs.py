@@ -65,6 +65,7 @@ def validate_required_files(checks: list[Check]) -> None:
         ROOT / "docs" / "semiconductor_process_notes.md",
         ROOT / "docs" / "submission_guide.md",
         REPORTS / "metrics.csv",
+        REPORTS / "model_card.md",
         REPORTS / "model_comparison.md",
         REPORTS / "run_summary.md",
         REPORTS / "dashboard.html",
@@ -243,6 +244,7 @@ def markdown_files_to_validate() -> list[Path]:
     return [
         ROOT / "README.md",
         *sorted((ROOT / "docs").glob("*.md")),
+        REPORTS / "model_card.md",
         REPORTS / "model_comparison.md",
         REPORTS / "run_summary.md",
     ]

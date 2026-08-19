@@ -18,6 +18,7 @@ This repository is ready to present as a semiconductor manufacturing AI / FDC-st
 | Manufacturing story | FDC workflow diagram and decision-support explanation |
 | System demo | FastAPI `/health`, `/model-info`, `/predict` |
 | Review surface | `reports/dashboard.html` |
+| Model governance | `reports/model_card.md` |
 | Validation | `src/validate_outputs.py`, generated output and Markdown link checks passed |
 | Submission support | `Makefile`, `docs/submission_guide.md`, `docs/interview_qa.md` |
 
