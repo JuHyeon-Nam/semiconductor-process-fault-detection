@@ -72,6 +72,7 @@ Expected validation result:
 | `README.md` | Main project story and results |
 | `reports/dashboard.html` | One-screen review of metrics, trade-offs, and workflow |
 | `reports/model_card.md` | Intended use, metrics, risks, and operating conditions |
+| `reports/score_band_analysis.csv` | Evidence that high scores are used as ranking signals, not calibrated probabilities |
 | `reports/validation_summary.md` | Evidence that generated outputs are consistent |
 | `src/train.py` | Main EDA/model/report pipeline |
 | `src/api.py` | Inference endpoint |

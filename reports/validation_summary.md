@@ -1,6 +1,6 @@
 # Validation Summary
 
-- Checks passed: 95
+- Checks passed: 100
 - Checks failed: 0
 
 | Check | Status | Detail |
@@ -19,6 +19,7 @@
 | file: reports/run_summary.md | PASS | exists and is non-empty |
 | file: reports/dashboard.html | PASS | exists and is non-empty |
 | file: reports/cost_threshold_analysis.csv | PASS | exists and is non-empty |
+| file: reports/score_band_analysis.csv | PASS | exists and is non-empty |
 | file: reports/threshold_curve_best.csv | PASS | exists and is non-empty |
 | file: reports/permutation_importance.csv | PASS | exists and is non-empty |
 | file: reports/importance_comparison.csv | PASS | exists and is non-empty |
@@ -26,6 +27,7 @@
 | file: reports/figures/accuracy_warning.png | PASS | exists and is non-empty |
 | file: reports/figures/cost_threshold_analysis.png | PASS | exists and is non-empty |
 | file: reports/figures/fdc_operating_workflow.png | PASS | exists and is non-empty |
+| file: reports/figures/score_band_analysis.png | PASS | exists and is non-empty |
 | file: artifacts/best_model.joblib | PASS | exists and is non-empty |
 | file: artifacts/model_metadata.json | PASS | exists and is non-empty |
 | metrics: expected model rows | PASS | 8 model rows found |
@@ -80,14 +82,17 @@
 | data profile: zero variance sensors | PASS | zero_variance=116 |
 | cost: scenarios | PASS | scenarios=balanced_review, yield_risk_sensitive, escape_critical |
 | cost: yield-risk threshold behavior | PASS | threshold=0.06, missed_fail=1 |
+| score bands: top band enriches fail rate | PASS | top_band_fail_rate=0.1935, mean_band_fail_rate=0.0669 |
+| score bands: cumulative fail capture | PASS | top_30_capture=0.7619 |
 | dashboard: contains extra_trees_balanced | PASS | token present |
 | dashboard: contains isolation_forest_pass_only | PASS | token present |
 | dashboard: contains All-Pass Accuracy | PASS | token present |
 | dashboard: contains Cost-Sensitive | PASS | token present |
+| dashboard: contains Score Band | PASS | token present |
 | artifact: model name matches metrics | PASS | artifact=extra_trees_balanced, metrics=extra_trees_balanced |
 | artifact: threshold matches metrics | PASS | artifact=0.1000, metrics=0.1000 |
 | artifact: feature schema | PASS | feature_count=590 |
-| markdown links: README.md | PASS | checked=14 |
+| markdown links: README.md | PASS | checked=15 |
 | markdown links: docs/final_review.md | PASS | checked=0 |
 | markdown links: docs/interview_notes.md | PASS | checked=0 |
 | markdown links: docs/interview_qa.md | PASS | checked=0 |

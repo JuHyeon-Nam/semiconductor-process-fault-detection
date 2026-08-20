@@ -40,42 +40,46 @@ IsolationForest는 정상 샘플만 학습한 anomaly baseline입니다. test fa
 
 가상의 비용 단위로 false alarm과 missed fail의 상대 비용을 바꿔보는 분석입니다. missed fail 비용을 크게 두면 threshold가 0.10에서 0.06으로 내려가고 missed fail은 5개에서 1개로 줄지만 false alarm은 66개에서 207개로 늘어납니다.
 
-## 11. 센서명이 익명인데 feature importance가 의미 있나?
+## 11. score가 실제 불량 확률이라고 볼 수 있나?
+
+그렇게 과장하지 않습니다. 이 프로젝트에서는 score를 물리적으로 보정된 불량 확률이 아니라 review 우선순위를 정하는 ranking signal로 봅니다. 그래서 `reports/score_band_analysis.csv`에서 상위 score 구간에 실제 fail이 얼마나 몰리는지 확인했습니다.
+
+## 12. 센서명이 익명인데 feature importance가 의미 있나?
 
 물리적 root cause를 단정하는 용도는 아닙니다. 대신 sensor candidate prioritization으로 의미가 있습니다. 실제 fab 데이터라면 이 후보를 FDC tag, chamber, recipe step, PM 이력, metrology 결과와 매핑해서 엔지니어가 검토해야 합니다.
 
-## 12. built-in importance와 permutation importance를 왜 둘 다 봤나?
+## 13. built-in importance와 permutation importance를 왜 둘 다 봤나?
 
 Built-in importance는 tree ensemble이 학습 중 어떤 feature를 많이 사용했는지 보여줍니다. Permutation importance는 validation 성능이 해당 feature에 실제로 얼마나 의존하는지 확인합니다. correlated sensor가 많은 제조 데이터에서는 두 관점을 같이 보는 편이 더 안전합니다.
 
-## 13. PR-AUC가 낮아 보이는데 문제 아닌가?
+## 14. PR-AUC가 낮아 보이는데 문제 아닌가?
 
 불량 비율이 6.64%인 매우 불균형 데이터라 PR-AUC가 높게 나오기 어렵습니다. 그래서 절대값만 보기보다 all-pass baseline, missed fail count, false alarm count, F2, threshold curve와 함께 해석했습니다. 성능을 과장하지 않는 것이 더 중요하다고 봤습니다.
 
-## 14. FastAPI는 왜 넣었나?
+## 15. FastAPI는 왜 넣었나?
 
 보고서에서 끝내지 않고 모델 score를 시스템이 호출할 수 있는 최소 인터페이스를 보여주기 위해 넣었습니다. `/health`, `/model-info`, `/predict`를 제공하지만, production deployment가 아니라 decision-support PoC입니다.
 
-## 15. 실제 현장 데이터라면 다음에 무엇을 하겠나?
+## 16. 실제 현장 데이터라면 다음에 무엇을 하겠나?
 
 센서 후보를 실제 FDC tag와 recipe step에 매핑하고, lot/wafer 이력, chamber, PM 이력, metrology, inspection, E-test 결과를 연결하겠습니다. 그 다음 review capacity와 missed fail 비용을 바탕으로 threshold 운영점을 다시 정하겠습니다.
 
-## 16. 이 프로젝트에서 가장 중요한 배운 점은?
+## 17. 이 프로젝트에서 가장 중요한 배운 점은?
 
 제조 AI에서는 모델 정확도 하나보다 문제 정의가 중요합니다. 결측과 불균형을 먼저 이해하고, test leakage를 피하고, threshold와 비용 trade-off를 설명하고, 모델 결과를 엔지니어 review 흐름으로 연결해야 합니다.
 
-## 17. 이 프로젝트의 한계는?
+## 18. 이 프로젝트의 한계는?
 
 SECOM은 센서명이 익명화되어 있고 데이터 규모도 크지 않습니다. 그래서 물리적 원인을 확정하거나 production 성능을 주장할 수 없습니다. 대신 이 프로젝트는 제조 센서 데이터 문제를 다루는 분석 절차와 의사결정 구조를 보여주는 PoC입니다.
 
-## 18. 가장 먼저 보여줄 산출물은?
+## 19. 가장 먼저 보여줄 산출물은?
 
 `README.md`, `reports/dashboard.html`, `reports/model_card.md`입니다. README는 프로젝트의 전체 논리를 보여주고, dashboard는 metric, threshold, cost, workflow, sensor candidate를 한 화면에서 보여줍니다. model card는 intended use, 한계, 운영 리스크, monitoring 조건을 정리합니다.
 
-## 19. 재현성은 어떻게 확인하나?
+## 20. 재현성은 어떻게 확인하나?
 
 `make reproduce`를 실행하면 의존성 설치, 데이터 다운로드, 학습/리포트 생성, output validation, API smoke test를 순서대로 실행합니다. `src/validate_outputs.py`는 산출물, 핵심 metric, 문서 링크, git policy를 함께 확인합니다.
 
-## 20. 왜 이게 단순 예제보다 낫다고 볼 수 있나?
+## 21. 왜 이게 단순 예제보다 낫다고 볼 수 있나?
 
-단순히 모델 성능표만 만든 것이 아니라, all-pass baseline, class imbalance, validation thresholding, cost-sensitive threshold, anomaly baseline, sensor interpretation, FDC workflow, model card, FastAPI, dashboard, validation checks까지 하나의 제조 데이터 문제 해결 흐름으로 연결했기 때문입니다.
+단순히 모델 성능표만 만든 것이 아니라, all-pass baseline, class imbalance, validation thresholding, cost-sensitive threshold, score band review, anomaly baseline, sensor interpretation, FDC workflow, model card, FastAPI, dashboard, validation checks까지 하나의 제조 데이터 문제 해결 흐름으로 연결했기 때문입니다.

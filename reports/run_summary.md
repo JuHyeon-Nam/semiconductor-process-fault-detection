@@ -79,6 +79,23 @@ The costs below are hypothetical units, not real fab economics. Thresholds are s
 | yield_risk_sensitive | 1.0 | 25.0 | 0.06 | 1 | 207 | 0.9524 | 73.89 |
 | escape_critical | 1.0 | 50.0 | 0.06 | 1 | 207 | 0.9524 | 81.85 |
 
+## Score Band Analysis
+
+This table sorts held-out test samples by fail-risk score and groups them into ten equal-sized bands. It is a ranking-quality view, not a claim that the score is a calibrated probability.
+
+| band | samples | fail count | fail rate | cumulative review rate | cumulative fail capture | score range |
+|---|---:|---:|---:|---:|---:|---|
+| top_10_percent | 31 | 6 | 0.1935 | 0.0987 | 0.2857 | 0.1388-0.2376 |
+| 10_20_percent | 31 | 5 | 0.1613 | 0.1975 | 0.5238 | 0.1137-0.1378 |
+| 20_30_percent | 32 | 5 | 0.1562 | 0.2994 | 0.7619 | 0.0976-0.1127 |
+| 30_40_percent | 31 | 0 | 0.0000 | 0.3981 | 0.7619 | 0.0841-0.0972 |
+| 40_50_percent | 32 | 3 | 0.0938 | 0.5000 | 0.9048 | 0.0784-0.0835 |
+| 50_60_percent | 31 | 1 | 0.0323 | 0.5987 | 0.9524 | 0.0703-0.0781 |
+| 60_70_percent | 31 | 0 | 0.0000 | 0.6975 | 0.9524 | 0.0624-0.0702 |
+| 70_80_percent | 32 | 0 | 0.0000 | 0.7994 | 0.9524 | 0.0549-0.0610 |
+| 80_90_percent | 31 | 1 | 0.0323 | 0.8981 | 1.0000 | 0.0455-0.0548 |
+| 90_100_percent | 32 | 0 | 0.0000 | 1.0000 | 1.0000 | 0.0226-0.0454 |
+
 ## Top Sensor Candidates
 
 | feature | importance |
@@ -100,16 +117,16 @@ Permutation importance is calculated on the validation split with average precis
 
 | feature | permutation_importance_mean | std |
 |---|---:|---:|
-| sensor_064 | 0.023800 | 0.012986 |
-| sensor_065 | 0.012168 | 0.009940 |
-| sensor_037 | 0.009071 | 0.002911 |
-| sensor_028 | 0.005932 | 0.006846 |
-| sensor_419 | 0.005792 | 0.003499 |
-| sensor_076 | 0.005696 | 0.002924 |
-| sensor_210 | 0.005565 | 0.003662 |
-| sensor_031 | 0.005171 | 0.002840 |
-| sensor_295 | 0.004931 | 0.001201 |
-| sensor_125 | 0.004709 | 0.004729 |
+| sensor_064 | 0.023783 | 0.012989 |
+| sensor_065 | 0.012147 | 0.009940 |
+| sensor_037 | 0.009050 | 0.002911 |
+| sensor_028 | 0.005910 | 0.006846 |
+| sensor_419 | 0.005766 | 0.003496 |
+| sensor_076 | 0.005675 | 0.002924 |
+| sensor_210 | 0.005543 | 0.003668 |
+| sensor_031 | 0.005145 | 0.002841 |
+| sensor_295 | 0.004905 | 0.001202 |
+| sensor_125 | 0.004682 | 0.004723 |
 
 ## Importance Comparison
 
@@ -117,15 +134,15 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 
 | feature | built_in_rank | permutation_rank | built_in_importance | permutation_importance_mean |
 |---|---:|---:|---:|---:|
-| sensor_064 | 3 | 1 | 0.007861 | 0.023800 |
-| sensor_065 | 5 | 2 | 0.006011 | 0.012168 |
-| sensor_028 | 7 | 4 | 0.005651 | 0.005932 |
-| sensor_419 | 29 | 5 | 0.003657 | 0.005792 |
-| sensor_125 | 27 | 10 | 0.003738 | 0.004709 |
-| sensor_499 | 24 | 13 | 0.003788 | 0.004327 |
-| sensor_129 | 1 | 15 | 0.009227 | 0.003868 |
-| sensor_510 | 23 | 18 | 0.003809 | 0.003542 |
-| sensor_316 | 14 | 22 | 0.004293 | 0.003193 |
+| sensor_064 | 3 | 1 | 0.007861 | 0.023783 |
+| sensor_065 | 5 | 2 | 0.006011 | 0.012147 |
+| sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005766 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004682 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004310 |
+| sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
+| sensor_510 | 23 | 18 | 0.003809 | 0.003521 |
+| sensor_316 | 14 | 22 | 0.004293 | 0.003171 |
 
 ## Interview Message
 

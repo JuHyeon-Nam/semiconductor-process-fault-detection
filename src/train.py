@@ -364,6 +364,52 @@ def evaluate(name: str, threshold: float, y_test: pd.Series, scores: np.ndarray)
     )
 
 
+def score_band_analysis(y_test: pd.Series, scores: np.ndarray, n_bands: int = 10) -> pd.DataFrame:
+    ranked = (
+        pd.DataFrame({"y_true": y_test.to_numpy(), "score_fail": scores})
+        .sort_values("score_fail", ascending=False)
+        .reset_index(drop=True)
+    )
+    ranked["band_index"] = np.ceil((np.arange(len(ranked)) + 1) * n_bands / len(ranked)).astype(int)
+    ranked["band_index"] = ranked["band_index"].clip(1, n_bands)
+
+    grouped = (
+        ranked.groupby("band_index", as_index=False)
+        .agg(
+            sample_count=("y_true", "size"),
+            fail_count=("y_true", "sum"),
+            score_min=("score_fail", "min"),
+            score_max=("score_fail", "max"),
+        )
+        .sort_values("band_index")
+    )
+    total_samples = len(ranked)
+    total_fails = int(ranked["y_true"].sum())
+    grouped["band"] = grouped["band_index"].map(lambda value: "top_10_percent" if value == 1 else f"{(value - 1) * 10}_{value * 10}_percent")
+    grouped["fail_rate"] = grouped["fail_count"] / grouped["sample_count"]
+    grouped["review_rate"] = grouped["sample_count"] / total_samples
+    grouped["cumulative_samples"] = grouped["sample_count"].cumsum()
+    grouped["cumulative_fail_count"] = grouped["fail_count"].cumsum()
+    grouped["cumulative_review_rate"] = grouped["cumulative_samples"] / total_samples
+    grouped["cumulative_fail_capture_rate"] = grouped["cumulative_fail_count"] / max(total_fails, 1)
+    return grouped[
+        [
+            "band_index",
+            "band",
+            "sample_count",
+            "fail_count",
+            "fail_rate",
+            "review_rate",
+            "cumulative_samples",
+            "cumulative_fail_count",
+            "cumulative_review_rate",
+            "cumulative_fail_capture_rate",
+            "score_min",
+            "score_max",
+        ]
+    ]
+
+
 def feature_importance(model: Pipeline, x_train: pd.DataFrame) -> pd.DataFrame:
     estimator = model[-1]
     if hasattr(estimator, "feature_importances_"):
@@ -694,6 +740,39 @@ def plot_cost_threshold_curves(cost_curves: pd.DataFrame, cost_summary: pd.DataF
     plt.close()
 
 
+def plot_score_band_analysis(score_bands: pd.DataFrame) -> None:
+    x_pos = np.arange(len(score_bands))
+    labels = score_bands["band"].str.replace("_percent", "%").str.replace("_", "-")
+
+    fig, ax1 = plt.subplots(figsize=(9, 5))
+    ax1.bar(x_pos, score_bands["fail_rate"], color="#4c78a8", alpha=0.85, label="Band fail rate")
+    ax1.set_ylabel("Fail rate within score band")
+    ax1.set_ylim(0, max(0.25, float(score_bands["fail_rate"].max()) * 1.25))
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels(labels, rotation=35, ha="right")
+    ax1.grid(axis="y", alpha=0.25)
+
+    ax2 = ax1.twinx()
+    ax2.plot(
+        x_pos,
+        score_bands["cumulative_fail_capture_rate"],
+        color="#e45756",
+        marker="o",
+        linewidth=2,
+        label="Cumulative fail capture",
+    )
+    ax2.set_ylabel("Cumulative fail capture rate")
+    ax2.set_ylim(0, 1.05)
+
+    handles_1, labels_1 = ax1.get_legend_handles_labels()
+    handles_2, labels_2 = ax2.get_legend_handles_labels()
+    ax1.legend(handles_1 + handles_2, labels_1 + labels_2, loc="upper right")
+    plt.title("Best Model Score Band Analysis on Test Split")
+    fig.tight_layout()
+    plt.savefig(FIGURES / "score_band_analysis.png", dpi=180)
+    plt.close()
+
+
 def plot_fdc_operating_workflow() -> None:
     steps = [
         ("Process\nsensors", "temperature\npressure\ncurrent\nplasma"),
@@ -973,6 +1052,7 @@ def write_model_card(best: Evaluation, metrics: pd.DataFrame, cost_summary: pd.D
     class_profile = pd.read_csv(REPORTS / "class_profile.csv")
     split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
     sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
+    score_bands = pd.read_csv(REPORTS / "score_band_analysis.csv")
 
     total_samples = int(class_profile["count"].sum())
     fail_count = int(class_profile.loc[class_profile["class"] == "fail", "count"].iloc[0])
@@ -982,6 +1062,8 @@ def write_model_card(best: Evaluation, metrics: pd.DataFrame, cost_summary: pd.D
     all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
     anomaly = metrics.loc[metrics["name"] == "isolation_forest_pass_only"].iloc[0]
     yield_row = cost_summary.loc[cost_summary["scenario"] == "yield_risk_sensitive"].iloc[0]
+    top_band = score_bands.iloc[0]
+    top_three_bands = score_bands.iloc[2]
 
     split_lines = ["| split | samples | fail count | fail ratio |", "|---|---:|---:|---:|"]
     for row in split_profile.itertuples(index=False):
@@ -1045,6 +1127,10 @@ At the selected F2 threshold of {best.threshold:.2f}, the model catches {best.co
 
 The pass-only IsolationForest baseline reaches {anomaly.recall_fail:.4f} fail recall, but creates {int(anomaly.false_alarm_count)} false alarms. It is useful as an anomaly-screening reference, not as the selected operating model.
 
+## Score Band Behavior
+
+The score should be read as a ranking signal, not as a calibrated physical probability. On the held-out test split, the top 10% score band contains {int(top_band.fail_count)} fail samples out of {int(top_band.sample_count)} samples, for a band fail rate of {top_band.fail_rate:.4f}. Reviewing the top 30% score bands captures {top_three_bands.cumulative_fail_capture_rate:.4f} of test fail samples.
+
 ## Interpretation Policy
 
 Sensor names are anonymized, so important features are not treated as confirmed physical root causes. Built-in feature importance and permutation importance are used as sensor-candidate prioritization signals for engineering review.
@@ -1076,6 +1162,7 @@ def write_summary(
     missing_profile = pd.read_csv(REPORTS / "missing_profile.csv")
     high_corr = pd.read_csv(REPORTS / "high_correlation_pairs.csv")
     split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
+    score_bands = pd.read_csv(REPORTS / "score_band_analysis.csv")
 
     split_lines = ["| split | total | pass | fail | fail_ratio |", "|---|---:|---:|---:|---:|"]
     for row in split_profile.itertuples(index=False):
@@ -1137,6 +1224,18 @@ def write_summary(
         )
     cost_table = "\n".join(cost_lines)
 
+    score_band_lines = [
+        "| band | samples | fail count | fail rate | cumulative review rate | cumulative fail capture | score range |",
+        "|---|---:|---:|---:|---:|---:|---|",
+    ]
+    for row in score_bands.itertuples(index=False):
+        score_band_lines.append(
+            f"| {row.band} | {row.sample_count} | {row.fail_count} | {row.fail_rate:.4f} | "
+            f"{row.cumulative_review_rate:.4f} | {row.cumulative_fail_capture_rate:.4f} | "
+            f"{row.score_min:.4f}-{row.score_max:.4f} |"
+        )
+    score_band_table = "\n".join(score_band_lines)
+
     tn, fp = best.confusion[0]
     fn, tp = best.confusion[1]
     all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
@@ -1192,6 +1291,12 @@ Per-model PR curves, threshold curves, confusion matrices, and test predictions 
 The costs below are hypothetical units, not real fab economics. Thresholds are selected on validation data, then evaluated on the held-out test split.
 
 {cost_table}
+
+## Score Band Analysis
+
+This table sorts held-out test samples by fail-risk score and groups them into ten equal-sized bands. It is a ranking-quality view, not a claim that the score is a calibrated probability.
+
+{score_band_table}
 
 ## Top Sensor Candidates
 
@@ -1320,6 +1425,8 @@ def main() -> None:
     cost_summary.to_csv(REPORTS / "cost_threshold_analysis.csv", index=False)
     cost_curves.to_csv(REPORTS / "cost_threshold_curves.csv", index=False)
     curves[best.name].to_csv(REPORTS / "threshold_curve_best.csv", index=False)
+    score_bands = score_band_analysis(y_test, best_test_scores)
+    score_bands.to_csv(REPORTS / "score_band_analysis.csv", index=False)
     save_inference_artifact(best_model, best, x_train.columns.tolist())
 
     plot_precision_recall(test_scores_by_model, y_test)
@@ -1329,6 +1436,7 @@ def main() -> None:
     plot_permutation_importance(permutation_features)
     plot_importance_comparison(importance_comparison)
     plot_cost_threshold_curves(cost_curves, cost_summary)
+    plot_score_band_analysis(score_bands)
     plot_fdc_operating_workflow()
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)

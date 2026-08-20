@@ -60,6 +60,10 @@ At the selected F2 threshold of 0.10, the model catches 16 fail samples and miss
 
 The pass-only IsolationForest baseline reaches 0.9524 fail recall, but creates 283 false alarms. It is useful as an anomaly-screening reference, not as the selected operating model.
 
+## Score Band Behavior
+
+The score should be read as a ranking signal, not as a calibrated physical probability. On the held-out test split, the top 10% score band contains 6 fail samples out of 31 samples, for a band fail rate of 0.1935. Reviewing the top 30% score bands captures 0.7619 of test fail samples.
+
 ## Interpretation Policy
 
 Sensor names are anonymized, so important features are not treated as confirmed physical root causes. Built-in feature importance and permutation importance are used as sensor-candidate prioritization signals for engineering review.

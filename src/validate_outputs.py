@@ -70,6 +70,7 @@ def validate_required_files(checks: list[Check]) -> None:
         REPORTS / "run_summary.md",
         REPORTS / "dashboard.html",
         REPORTS / "cost_threshold_analysis.csv",
+        REPORTS / "score_band_analysis.csv",
         REPORTS / "threshold_curve_best.csv",
         REPORTS / "permutation_importance.csv",
         REPORTS / "importance_comparison.csv",
@@ -77,6 +78,7 @@ def validate_required_files(checks: list[Check]) -> None:
         FIGURES / "accuracy_warning.png",
         FIGURES / "cost_threshold_analysis.png",
         FIGURES / "fdc_operating_workflow.png",
+        FIGURES / "score_band_analysis.png",
         ARTIFACTS / "best_model.joblib",
         ARTIFACTS / "model_metadata.json",
     ]
@@ -185,6 +187,7 @@ def validate_data_profiles(checks: list[Check]) -> None:
 
 def validate_cost_and_dashboard(checks: list[Check]) -> None:
     cost = pd.read_csv(REPORTS / "cost_threshold_analysis.csv")
+    score_bands = pd.read_csv(REPORTS / "score_band_analysis.csv")
     add_check(
         checks,
         "cost: scenarios",
@@ -202,9 +205,24 @@ def validate_cost_and_dashboard(checks: list[Check]) -> None:
             f"missed_fail={int(yield_row['test_missed_fail_count'])}"
         ),
     )
+    add_check(
+        checks,
+        "score bands: top band enriches fail rate",
+        float(score_bands.iloc[0]["fail_rate"]) > float(score_bands["fail_rate"].mean()),
+        (
+            f"top_band_fail_rate={float(score_bands.iloc[0]['fail_rate']):.4f}, "
+            f"mean_band_fail_rate={float(score_bands['fail_rate'].mean()):.4f}"
+        ),
+    )
+    add_check(
+        checks,
+        "score bands: cumulative fail capture",
+        float(score_bands.iloc[2]["cumulative_fail_capture_rate"]) >= 0.50,
+        f"top_30_capture={float(score_bands.iloc[2]['cumulative_fail_capture_rate']):.4f}",
+    )
 
     dashboard = (REPORTS / "dashboard.html").read_text(encoding="utf-8")
-    for token in ["extra_trees_balanced", "isolation_forest_pass_only", "All-Pass Accuracy", "Cost-Sensitive"]:
+    for token in ["extra_trees_balanced", "isolation_forest_pass_only", "All-Pass Accuracy", "Cost-Sensitive", "Score Band"]:
         add_check(checks, f"dashboard: contains {token}", token in dashboard, "token present")
 
 

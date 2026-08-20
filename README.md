@@ -200,6 +200,16 @@ Interpretation:
 
 ---
 
+## Score Band Review
+
+The best model's held-out test scores are sorted from highest risk to lowest risk and grouped into equal-sized bands. This is not presented as calibrated physical probability. It is used to check whether the score is useful as a ranking signal for review prioritization.
+
+![Score band analysis](reports/figures/score_band_analysis.png)
+
+Generated table: `reports/score_band_analysis.csv`
+
+---
+
 ## Manufacturing Decision Workflow
 
 This project treats the model as a decision-support layer, not as an automatic final judgment system. The intended operating flow is:
@@ -332,6 +342,7 @@ Generated outputs:
 - `reports/importance_comparison.csv`
 - `reports/cost_threshold_analysis.csv`
 - `reports/cost_threshold_curves.csv`
+- `reports/score_band_analysis.csv`
 - `reports/models/<model_name>/summary.csv`
 - `reports/models/<model_name>/validation_threshold_curve.csv`
 - `reports/models/<model_name>/test_predictions.csv`
@@ -396,6 +407,7 @@ Generated outputs:
     ├── validation_summary.md
     ├── permutation_importance.csv
     ├── sensor_quality_profile.csv
+    ├── score_band_analysis.csv
     ├── split_class_profile.csv
     ├── top_features.csv
     ├── threshold_curve_best.csv
@@ -405,6 +417,7 @@ Generated outputs:
         ├── class_imbalance.png
         ├── cost_threshold_analysis.png
         ├── fdc_operating_workflow.png
+        ├── score_band_analysis.png
         ├── missingness_distribution.png
         ├── sensor_quality_summary.png
         ├── top_missing_sensors.png
@@ -428,6 +441,7 @@ Generated outputs:
 | Metric design | Fail Recall, F2, PR-AUC, missed fail count, false alarm count |
 | Evaluation hygiene | validation threshold selection, final test evaluation |
 | Decision policy | cost-sensitive threshold analysis with explicit false-alarm and missed-fail assumptions |
+| Score interpretation | score band analysis for review-prioritization behavior |
 | Manufacturing workflow | FDC-style sensor, scoring, alarm, engineer review, and feedback loop diagram |
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | System demo | FastAPI `/health`, `/model-info`, and `/predict` endpoints |

@@ -52,6 +52,7 @@ def build_dashboard(root: Path = ROOT) -> Path:
     missing_profile = pd.read_csv(reports / "missing_profile.csv")
     sensor_quality = pd.read_csv(reports / "sensor_quality_profile.csv")
     cost_summary = pd.read_csv(reports / "cost_threshold_analysis.csv")
+    score_bands = pd.read_csv(reports / "score_band_analysis.csv")
     permutation = pd.read_csv(reports / "permutation_importance.csv")
 
     best = metrics.iloc[0]
@@ -112,6 +113,23 @@ def build_dashboard(root: Path = ROOT) -> Path:
             "selected_threshold_from_validation",
             "test_fail_recall",
         },
+    )
+    score_band_table = table_html(
+        score_bands,
+        [
+            "band",
+            "sample_count",
+            "fail_count",
+            "fail_rate",
+            "cumulative_review_rate",
+            "cumulative_fail_capture_rate",
+        ],
+        {
+            "fail_rate",
+            "cumulative_review_rate",
+            "cumulative_fail_capture_rate",
+        },
+        limit=5,
     )
     missing_table = table_html(
         missing_profile,
@@ -288,6 +306,15 @@ def build_dashboard(root: Path = ROOT) -> Path:
       <div class="grid-two">
         <div>{cost_table}</div>
         <img src="figures/cost_threshold_analysis.png" alt="Cost threshold analysis">
+      </div>
+    </section>
+
+    <section>
+      <h2>Score Band Review</h2>
+      <p>Held-out test samples are sorted by fail-risk score and grouped into equal-sized bands. This is a ranking-quality view, not a calibrated probability claim.</p>
+      <div class="grid-two">
+        <img src="figures/score_band_analysis.png" alt="Score band analysis">
+        <div>{score_band_table}</div>
       </div>
     </section>
 
