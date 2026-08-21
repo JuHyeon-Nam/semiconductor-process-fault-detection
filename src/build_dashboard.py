@@ -53,6 +53,7 @@ def build_dashboard(root: Path = ROOT) -> Path:
     sensor_quality = pd.read_csv(reports / "sensor_quality_profile.csv")
     cost_summary = pd.read_csv(reports / "cost_threshold_analysis.csv")
     score_bands = pd.read_csv(reports / "score_band_analysis.csv")
+    review_capacity = pd.read_csv(reports / "review_capacity_analysis.csv")
     permutation = pd.read_csv(reports / "permutation_importance.csv")
 
     best = metrics.iloc[0]
@@ -130,6 +131,23 @@ def build_dashboard(root: Path = ROOT) -> Path:
             "cumulative_fail_capture_rate",
         },
         limit=5,
+    )
+    review_capacity_table = table_html(
+        review_capacity,
+        [
+            "review_budget",
+            "review_count",
+            "captured_fail_count",
+            "missed_fail_count",
+            "false_alarm_count",
+            "fail_capture_rate",
+            "review_precision",
+        ],
+        {
+            "review_budget",
+            "fail_capture_rate",
+            "review_precision",
+        },
     )
     missing_table = table_html(
         missing_profile,
@@ -315,6 +333,15 @@ def build_dashboard(root: Path = ROOT) -> Path:
       <div class="grid-two">
         <img src="figures/score_band_analysis.png" alt="Score band analysis">
         <div>{score_band_table}</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Review Capacity</h2>
+      <p>This view connects model ranking to engineering workload: how many fail cases are captured if only the top-scored samples can be reviewed.</p>
+      <div class="grid-two">
+        <img src="figures/review_capacity_analysis.png" alt="Review capacity analysis">
+        <div>{review_capacity_table}</div>
       </div>
     </section>
 

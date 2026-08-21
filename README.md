@@ -210,6 +210,16 @@ Generated table: `reports/score_band_analysis.csv`
 
 ---
 
+## Review Capacity Analysis
+
+In manufacturing use, an alarm is only useful if engineers can review it. The review capacity analysis sorts held-out test samples by fail-risk score and checks how many fail samples are captured when only the top-scored 5%, 10%, 20%, 30%, or 50% can be reviewed.
+
+![Review capacity analysis](reports/figures/review_capacity_analysis.png)
+
+Generated table: `reports/review_capacity_analysis.csv`
+
+---
+
 ## Manufacturing Decision Workflow
 
 This project treats the model as a decision-support layer, not as an automatic final judgment system. The intended operating flow is:
@@ -343,6 +353,7 @@ Generated outputs:
 - `reports/cost_threshold_analysis.csv`
 - `reports/cost_threshold_curves.csv`
 - `reports/score_band_analysis.csv`
+- `reports/review_capacity_analysis.csv`
 - `reports/models/<model_name>/summary.csv`
 - `reports/models/<model_name>/validation_threshold_curve.csv`
 - `reports/models/<model_name>/test_predictions.csv`
@@ -406,6 +417,7 @@ Generated outputs:
     ├── run_summary.md
     ├── validation_summary.md
     ├── permutation_importance.csv
+    ├── review_capacity_analysis.csv
     ├── sensor_quality_profile.csv
     ├── score_band_analysis.csv
     ├── split_class_profile.csv
@@ -417,6 +429,7 @@ Generated outputs:
         ├── class_imbalance.png
         ├── cost_threshold_analysis.png
         ├── fdc_operating_workflow.png
+        ├── review_capacity_analysis.png
         ├── score_band_analysis.png
         ├── missingness_distribution.png
         ├── sensor_quality_summary.png
@@ -442,6 +455,7 @@ Generated outputs:
 | Evaluation hygiene | validation threshold selection, final test evaluation |
 | Decision policy | cost-sensitive threshold analysis with explicit false-alarm and missed-fail assumptions |
 | Score interpretation | score band analysis for review-prioritization behavior |
+| Review capacity | top-score review budget analysis for engineering workload trade-offs |
 | Manufacturing workflow | FDC-style sensor, scoring, alarm, engineer review, and feedback loop diagram |
 | Sensor interpretation | built-in importance, permutation importance, candidate-prioritization framing |
 | System demo | FastAPI `/health`, `/model-info`, and `/predict` endpoints |

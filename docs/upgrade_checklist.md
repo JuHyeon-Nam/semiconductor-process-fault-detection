@@ -16,6 +16,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 | Model breadth | Improved | Logistic Regression, RandomForest, ExtraTrees, HistGradientBoosting, pass-only IsolationForest, and all-pass baseline are compared. |
 | Threshold analysis | Improved | Validation threshold curves, PR curves, confusion matrices, and test predictions are saved per trained model. |
 | Score interpretation | Improved | Score band analysis checks whether high-risk scores concentrate actual fail samples. |
+| Review capacity | Improved | Review budget analysis connects score ranking to finite engineering workload. |
 | Interpretability | Improved | Built-in feature importance and validation permutation importance are reported and compared. |
 | Manufacturing deployment story | Improved | FDC framing, cost-sensitive thresholding, and operating workflow diagram exist. |
 | System demo | Improved | FastAPI `/health`, `/model-info`, and `/predict` endpoints exist with sample input and smoke test. |
@@ -59,6 +60,7 @@ Goal: make this repository credible for semiconductor manufacturing AI, FDC, yie
 - Added `reports/cost_threshold_analysis.csv`.
 - Added `reports/cost_threshold_curves.csv`.
 - Added `reports/score_band_analysis.csv` and `reports/figures/score_band_analysis.png` to inspect score ranking behavior.
+- Added `reports/review_capacity_analysis.csv` and `reports/figures/review_capacity_analysis.png` to connect fail capture with finite review budgets.
 - Added `reports/figures/cost_threshold_analysis.png`.
 - Updated README and run summary to explain how threshold changes when missed failures are more expensive.
 - Added `reports/figures/fdc_operating_workflow.png` to connect sensor data, model scoring, alarm review, PM/recipe checks, and feedback.

@@ -64,6 +64,10 @@ The pass-only IsolationForest baseline reaches 0.9524 fail recall, but creates 2
 
 The score should be read as a ranking signal, not as a calibrated physical probability. On the held-out test split, the top 10% score band contains 6 fail samples out of 31 samples, for a band fail rate of 0.1935. Reviewing the top 30% score bands captures 0.7619 of test fail samples.
 
+## Review Capacity Behavior
+
+If engineering review capacity is limited to the top 10% highest-risk test samples, the model captures 7 of 21 fail samples. At a 30% review budget, it captures 16 of 21 fail samples and leaves 5 missed fails. These numbers are held-out test characterization, not threshold selection.
+
 ## Interpretation Policy
 
 Sensor names are anonymized, so important features are not treated as confirmed physical root causes. Built-in feature importance and permutation importance are used as sensor-candidate prioritization signals for engineering review.

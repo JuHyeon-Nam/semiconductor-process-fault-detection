@@ -96,6 +96,18 @@ This table sorts held-out test samples by fail-risk score and groups them into t
 | 80_90_percent | 31 | 1 | 0.0323 | 0.8981 | 1.0000 | 0.0455-0.0548 |
 | 90_100_percent | 32 | 0 | 0.0000 | 1.0000 | 1.0000 | 0.0226-0.0454 |
 
+## Review Capacity Analysis
+
+This table asks a practical operating question: if engineers can review only the top-scored 5%, 10%, 20%, 30%, or 50% of samples, how many held-out test failures are captured? It is a review-capacity characterization, not model or threshold selection.
+
+| review budget | review count | score cutoff | captured fail | missed fail | false alarm | fail capture | review precision |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.05 | 16 | 0.1617 | 3 | 18 | 13 | 0.1429 | 0.1875 |
+| 0.10 | 32 | 0.1378 | 7 | 14 | 25 | 0.3333 | 0.2188 |
+| 0.20 | 63 | 0.1127 | 11 | 10 | 52 | 0.5238 | 0.1746 |
+| 0.30 | 95 | 0.0972 | 16 | 5 | 79 | 0.7619 | 0.1684 |
+| 0.50 | 157 | 0.0784 | 19 | 2 | 138 | 0.9048 | 0.1210 |
+
 ## Top Sensor Candidates
 
 | feature | importance |
@@ -119,14 +131,14 @@ Permutation importance is calculated on the validation split with average precis
 |---|---:|---:|
 | sensor_064 | 0.023783 | 0.012989 |
 | sensor_065 | 0.012147 | 0.009940 |
-| sensor_037 | 0.009050 | 0.002911 |
+| sensor_037 | 0.009045 | 0.002910 |
 | sensor_028 | 0.005910 | 0.006846 |
-| sensor_419 | 0.005766 | 0.003496 |
+| sensor_419 | 0.005770 | 0.003499 |
 | sensor_076 | 0.005675 | 0.002924 |
-| sensor_210 | 0.005543 | 0.003668 |
-| sensor_031 | 0.005145 | 0.002841 |
-| sensor_295 | 0.004905 | 0.001202 |
-| sensor_125 | 0.004682 | 0.004723 |
+| sensor_210 | 0.005543 | 0.003670 |
+| sensor_031 | 0.005149 | 0.002840 |
+| sensor_295 | 0.004905 | 0.001206 |
+| sensor_125 | 0.004687 | 0.004729 |
 
 ## Importance Comparison
 
@@ -137,9 +149,9 @@ Built-in tree importance and permutation importance are complementary. Built-in 
 | sensor_064 | 3 | 1 | 0.007861 | 0.023783 |
 | sensor_065 | 5 | 2 | 0.006011 | 0.012147 |
 | sensor_028 | 7 | 4 | 0.005651 | 0.005910 |
-| sensor_419 | 29 | 5 | 0.003657 | 0.005766 |
-| sensor_125 | 27 | 10 | 0.003738 | 0.004682 |
-| sensor_499 | 24 | 13 | 0.003788 | 0.004310 |
+| sensor_419 | 29 | 5 | 0.003657 | 0.005770 |
+| sensor_125 | 27 | 10 | 0.003738 | 0.004687 |
+| sensor_499 | 24 | 13 | 0.003788 | 0.004306 |
 | sensor_129 | 1 | 15 | 0.009227 | 0.003846 |
 | sensor_510 | 23 | 18 | 0.003809 | 0.003521 |
 | sensor_316 | 14 | 22 | 0.004293 | 0.003171 |

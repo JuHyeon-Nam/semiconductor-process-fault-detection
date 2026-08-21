@@ -15,6 +15,7 @@ This repository is ready to present as a semiconductor manufacturing AI / FDC-st
 | Model result | ExtraTrees balanced selected by F2, test recall 0.7619, F2 0.4819 |
 | Cost trade-off | cost-sensitive threshold scenarios in `reports/cost_threshold_analysis.csv` |
 | Score interpretation | score band analysis in `reports/score_band_analysis.csv` |
+| Review capacity | review budget analysis in `reports/review_capacity_analysis.csv` |
 | Interpretability | built-in importance, permutation importance, sensor candidate framing |
 | Manufacturing story | FDC workflow diagram and decision-support explanation |
 | System demo | FastAPI `/health`, `/model-info`, `/predict` |
@@ -46,6 +47,8 @@ The pass-only IsolationForest baseline also catches 20 of 21 fail cases, but pro
 
 The score band analysis is a ranking check, not a calibrated probability claim. It shows whether high fail-risk scores concentrate more actual fail samples and can therefore support review prioritization.
 
+The review capacity analysis translates the score ranking into workload terms. It answers how many fail samples are captured when only the top-scored portion can be reviewed, which is closer to how an FDC alarm queue would be operated.
+
 ## What Not To Overclaim
 
 - Do not claim this is production-ready.
@@ -53,6 +56,7 @@ The score band analysis is a ranking check, not a calibrated probability claim. 
 - Do not claim the model controls recipe or process specs directly.
 - Do not claim high accuracy is the project value.
 - Do not claim the fail-risk score is a calibrated physical failure probability.
+- Do not ignore engineering review capacity when discussing false alarms.
 - Do not claim false alarms are acceptable without review capacity analysis.
 
 ## Strong Interview Framing

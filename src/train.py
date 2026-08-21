@@ -410,6 +410,39 @@ def score_band_analysis(y_test: pd.Series, scores: np.ndarray, n_bands: int = 10
     ]
 
 
+def review_capacity_analysis(
+    y_test: pd.Series,
+    scores: np.ndarray,
+    review_budgets: tuple[float, ...] = (0.05, 0.10, 0.20, 0.30, 0.50),
+) -> pd.DataFrame:
+    ranked = (
+        pd.DataFrame({"y_true": y_test.to_numpy(), "score_fail": scores})
+        .sort_values("score_fail", ascending=False)
+        .reset_index(drop=True)
+    )
+    total_samples = len(ranked)
+    total_fails = int(ranked["y_true"].sum())
+    rows = []
+    for budget in review_budgets:
+        review_count = int(np.ceil(total_samples * budget))
+        reviewed = ranked.head(review_count)
+        fail_count = int(reviewed["y_true"].sum())
+        false_alarm_count = review_count - fail_count
+        rows.append(
+            {
+                "review_budget": budget,
+                "review_count": review_count,
+                "score_cutoff": float(reviewed["score_fail"].min()),
+                "captured_fail_count": fail_count,
+                "missed_fail_count": total_fails - fail_count,
+                "false_alarm_count": false_alarm_count,
+                "fail_capture_rate": fail_count / max(total_fails, 1),
+                "review_precision": fail_count / review_count if review_count else 0.0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def feature_importance(model: Pipeline, x_train: pd.DataFrame) -> pd.DataFrame:
     estimator = model[-1]
     if hasattr(estimator, "feature_importances_"):
@@ -773,6 +806,47 @@ def plot_score_band_analysis(score_bands: pd.DataFrame) -> None:
     plt.close()
 
 
+def plot_review_capacity_analysis(review_capacity: pd.DataFrame) -> None:
+    labels = [f"{int(row.review_budget * 100)}%" for row in review_capacity.itertuples(index=False)]
+    x_pos = np.arange(len(review_capacity))
+
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.bar(x_pos, review_capacity["captured_fail_count"], color="#4c78a8", alpha=0.85, label="Captured fail")
+    ax1.bar(
+        x_pos,
+        review_capacity["missed_fail_count"],
+        bottom=review_capacity["captured_fail_count"],
+        color="#e45756",
+        alpha=0.72,
+        label="Missed fail",
+    )
+    ax1.set_ylabel("Fail samples")
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels(labels)
+    ax1.set_xlabel("Review budget by test sample share")
+    ax1.grid(axis="y", alpha=0.25)
+
+    ax2 = ax1.twinx()
+    ax2.plot(
+        x_pos,
+        review_capacity["fail_capture_rate"],
+        color="#54a24b",
+        marker="o",
+        linewidth=2,
+        label="Fail capture rate",
+    )
+    ax2.set_ylabel("Fail capture rate")
+    ax2.set_ylim(0, 1.05)
+
+    handles_1, labels_1 = ax1.get_legend_handles_labels()
+    handles_2, labels_2 = ax2.get_legend_handles_labels()
+    ax1.legend(handles_1 + handles_2, labels_1 + labels_2, loc="lower right")
+    plt.title("Review Capacity vs Fail Capture on Test Split")
+    fig.tight_layout()
+    plt.savefig(FIGURES / "review_capacity_analysis.png", dpi=180)
+    plt.close()
+
+
 def plot_fdc_operating_workflow() -> None:
     steps = [
         ("Process\nsensors", "temperature\npressure\ncurrent\nplasma"),
@@ -1053,6 +1127,7 @@ def write_model_card(best: Evaluation, metrics: pd.DataFrame, cost_summary: pd.D
     split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
     sensor_quality = pd.read_csv(REPORTS / "sensor_quality_profile.csv")
     score_bands = pd.read_csv(REPORTS / "score_band_analysis.csv")
+    review_capacity = pd.read_csv(REPORTS / "review_capacity_analysis.csv")
 
     total_samples = int(class_profile["count"].sum())
     fail_count = int(class_profile.loc[class_profile["class"] == "fail", "count"].iloc[0])
@@ -1064,6 +1139,8 @@ def write_model_card(best: Evaluation, metrics: pd.DataFrame, cost_summary: pd.D
     yield_row = cost_summary.loc[cost_summary["scenario"] == "yield_risk_sensitive"].iloc[0]
     top_band = score_bands.iloc[0]
     top_three_bands = score_bands.iloc[2]
+    review_10 = review_capacity.loc[review_capacity["review_budget"] == 0.10].iloc[0]
+    review_30 = review_capacity.loc[review_capacity["review_budget"] == 0.30].iloc[0]
 
     split_lines = ["| split | samples | fail count | fail ratio |", "|---|---:|---:|---:|"]
     for row in split_profile.itertuples(index=False):
@@ -1131,6 +1208,10 @@ The pass-only IsolationForest baseline reaches {anomaly.recall_fail:.4f} fail re
 
 The score should be read as a ranking signal, not as a calibrated physical probability. On the held-out test split, the top 10% score band contains {int(top_band.fail_count)} fail samples out of {int(top_band.sample_count)} samples, for a band fail rate of {top_band.fail_rate:.4f}. Reviewing the top 30% score bands captures {top_three_bands.cumulative_fail_capture_rate:.4f} of test fail samples.
 
+## Review Capacity Behavior
+
+If engineering review capacity is limited to the top 10% highest-risk test samples, the model captures {int(review_10.captured_fail_count)} of 21 fail samples. At a 30% review budget, it captures {int(review_30.captured_fail_count)} of 21 fail samples and leaves {int(review_30.missed_fail_count)} missed fails. These numbers are held-out test characterization, not threshold selection.
+
 ## Interpretation Policy
 
 Sensor names are anonymized, so important features are not treated as confirmed physical root causes. Built-in feature importance and permutation importance are used as sensor-candidate prioritization signals for engineering review.
@@ -1163,6 +1244,7 @@ def write_summary(
     high_corr = pd.read_csv(REPORTS / "high_correlation_pairs.csv")
     split_profile = pd.read_csv(REPORTS / "split_class_profile.csv")
     score_bands = pd.read_csv(REPORTS / "score_band_analysis.csv")
+    review_capacity = pd.read_csv(REPORTS / "review_capacity_analysis.csv")
 
     split_lines = ["| split | total | pass | fail | fail_ratio |", "|---|---:|---:|---:|---:|"]
     for row in split_profile.itertuples(index=False):
@@ -1236,6 +1318,18 @@ def write_summary(
         )
     score_band_table = "\n".join(score_band_lines)
 
+    review_capacity_lines = [
+        "| review budget | review count | score cutoff | captured fail | missed fail | false alarm | fail capture | review precision |",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in review_capacity.itertuples(index=False):
+        review_capacity_lines.append(
+            f"| {row.review_budget:.2f} | {row.review_count} | {row.score_cutoff:.4f} | "
+            f"{row.captured_fail_count} | {row.missed_fail_count} | {row.false_alarm_count} | "
+            f"{row.fail_capture_rate:.4f} | {row.review_precision:.4f} |"
+        )
+    review_capacity_table = "\n".join(review_capacity_lines)
+
     tn, fp = best.confusion[0]
     fn, tp = best.confusion[1]
     all_pass = metrics.loc[metrics["name"] == "all_pass_baseline"].iloc[0]
@@ -1297,6 +1391,12 @@ The costs below are hypothetical units, not real fab economics. Thresholds are s
 This table sorts held-out test samples by fail-risk score and groups them into ten equal-sized bands. It is a ranking-quality view, not a claim that the score is a calibrated probability.
 
 {score_band_table}
+
+## Review Capacity Analysis
+
+This table asks a practical operating question: if engineers can review only the top-scored 5%, 10%, 20%, 30%, or 50% of samples, how many held-out test failures are captured? It is a review-capacity characterization, not model or threshold selection.
+
+{review_capacity_table}
 
 ## Top Sensor Candidates
 
@@ -1427,6 +1527,8 @@ def main() -> None:
     curves[best.name].to_csv(REPORTS / "threshold_curve_best.csv", index=False)
     score_bands = score_band_analysis(y_test, best_test_scores)
     score_bands.to_csv(REPORTS / "score_band_analysis.csv", index=False)
+    review_capacity = review_capacity_analysis(y_test, best_test_scores)
+    review_capacity.to_csv(REPORTS / "review_capacity_analysis.csv", index=False)
     save_inference_artifact(best_model, best, x_train.columns.tolist())
 
     plot_precision_recall(test_scores_by_model, y_test)
@@ -1437,6 +1539,7 @@ def main() -> None:
     plot_importance_comparison(importance_comparison)
     plot_cost_threshold_curves(cost_curves, cost_summary)
     plot_score_band_analysis(score_bands)
+    plot_review_capacity_analysis(review_capacity)
     plot_fdc_operating_workflow()
     plot_accuracy_warning(metrics)
     plot_result_dashboard(metrics, best)

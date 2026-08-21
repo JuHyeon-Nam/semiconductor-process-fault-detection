@@ -20,6 +20,7 @@ UCI SECOM 센서 데이터를 이용한 FDC-style fail risk screening 프로젝�
 - F2-based threshold optimization and final test evaluation
 - Cost-sensitive threshold analysis for false alarm vs missed fail trade-off
 - Score band review to check whether model scores are useful for review prioritization
+- Review capacity analysis for engineering workload trade-offs
 - Built-in feature importance and validation permutation importance
 - FastAPI demo with `/health`, `/model-info`, and `/predict`
 - Validation script for generated reports, metrics, artifacts, and git data policy
@@ -67,6 +68,7 @@ The pass-only IsolationForest baseline catches more fail cases but creates too m
 - `src/api.py`: FastAPI inference service
 - `reports/model_card.md`: intended use, limitations, monitoring, and operating policy
 - `reports/score_band_analysis.csv`: score ranking behavior on held-out test data
+- `reports/review_capacity_analysis.csv`: fail capture under limited review budgets
 - `reports/run_summary.md`: generated analysis summary
 - `reports/model_comparison.md`: model comparison table
 - `reports/validation_summary.md`: generated consistency check summary
